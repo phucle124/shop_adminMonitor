@@ -22,14 +22,14 @@ class KhachHang extends Model
     ];
 
     // Các cột muốn ẩn khi chuyển sang JSON/Array (Mật khẩu, token...)
-    protected $hidden = [
-        // 'password',
-    ];
+    // protected $hidden = [
+    //     // 'password',
+    // ];
 
-    // Ép kiểu dữ liệu cho các cột (ví dụ: ngày tháng, boolean, json)
-    protected $casts = [
-        // 'email_verified_at' => 'datetime',
-    ];
+    // // Ép kiểu dữ liệu cho các cột (ví dụ: ngày tháng, boolean, json)
+    // protected $casts = [
+    //     // 'email_verified_at' => 'datetime',
+    // ];
 
     // Bật/Tắt tự động quản lý 2 cột created_at và updated_at
     public $timestamps = true;

@@ -16,24 +16,28 @@ class ChiTiet_DonHang extends Model
     protected $fillable = [
         // 'ten_cot',
         'giaban',
-        'madh',
-        'masp',
+        'madh', //Luu y: PHẢI gán FK
+        'masp', //Luu y: PHẢI gán FK
         
     ];
 
     // Các cột muốn ẩn khi chuyển sang JSON/Array (Mật khẩu, token...)
-    protected $hidden = [
-        // 'password',
-    ];
+    // protected $hidden = [
+    //     // 'password',
+    // ];
 
-    // Ép kiểu dữ liệu cho các cột (ví dụ: ngày tháng, boolean, json)
-    protected $casts = [
-        // 'email_verified_at' => 'datetime',
-    ];
+    // // Ép kiểu dữ liệu cho các cột (ví dụ: ngày tháng, boolean, json)
+    // protected $casts = [
+    //     // 'email_verified_at' => 'datetime',
+    // ];
 
     // Bật/Tắt tự động quản lý 2 cột created_at và updated_at
     public $timestamps = true;
 
+
+
+
+    // 2 Phuơng thức tương ứng 2 cột FK ở mass
     public function donhang(){//Thuộc về 1 đơn hàng
         return $this->belongsTo(DonHang::class,'madh','madh');//cột FK 'madh' đang ở bảng này
     }
