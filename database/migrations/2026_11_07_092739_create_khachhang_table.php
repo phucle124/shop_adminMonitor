@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('khachhang', function (Blueprint $table) {
             $table->id('makh');
             $table->string('hoten',50);
-            $table->string('email',100);
+            $table->string('email',50);
             $table->string('sdt',10);
+            $table->string('diachi',100);
             $table->enum('gioitinh',['NAM','NU']);
             $table->timestamps();
         });

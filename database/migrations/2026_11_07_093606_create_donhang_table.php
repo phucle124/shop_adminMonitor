@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('donhang', function (Blueprint $table) {
             $table->id('madh');
             $table->double('tongtien');
-            $table->enum('trangthai',['CHO_THANH_TOAN','DA_THANH_TOAN']);
-            
+            $table->enum('trangthai_donhang',['CHO_XAC_NHAN','DA_XAC_NHAN','DA_HUY'])->default('CHO_XAC_NHAN');
+            $table->enum('trangthai_thanhtoan',['CHUA_THANH_TOAN','DA_THANH_TOAN'])->default('CHUA_THANH_TOAN');
             $table->unsignedBigInteger('makh');
             $table->foreign('makh')->references('makh')->on('khachhang');
             $table->timestamps();

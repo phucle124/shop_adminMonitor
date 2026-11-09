@@ -41,7 +41,7 @@ class DonHang extends Model
     }
 
     // 1 Phương thức tương ứng 1 cột FK ở mass
-    public function chitiet_donhangs(){ //Có tối đa 'N' đơn hàng 
+    public function chitiet_donhangs(){ //Có tối đa 'N' chi tiết đơn hàng 
         return $this->hasMany(ChiTiet_DonHang::class,'madh','madh'); //cột FK 'madh' ở bảng chitiet_dh
     }
 }

@@ -17,8 +17,8 @@ return new class extends Migration
 
             $table->unsignedBigInteger('madh');
             $table->unsignedBigInteger('masp');
-            $table->foreign('madh')->references('madh')->on('donhang')->onDelete('cascade');
-            $table->foreign('masp')->references('masp')->on('sanpham')->onDelete('cascade');
+            $table->foreign('madh')->references('madh')->on('donhang');
+            $table->foreign('masp')->references('masp')->on('sanpham');
             $table->timestamps();
         });
     }
