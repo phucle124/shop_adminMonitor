@@ -16,8 +16,9 @@ class DonHang extends Model
     protected $fillable = [
         // 'ten_cot',
         'tongtien',
-        'trangthai',
-        'makh', //Luu y: PHẢI gán FK (từ cột data trên db thực tế) vào mass luôn
+        'trangthai_donhang',
+        'trangthai_thanhtoan',
+        'makh', //Luu y: PHẢI gán FK (từ column trên db thực tế) vào mass 
     ];
 
     // Các cột muốn ẩn khi chuyển sang JSON/Array (Mật khẩu, token...)
