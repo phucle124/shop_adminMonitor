@@ -18,7 +18,7 @@ class SanPham extends Model
         'tensp',
         'mota',
         'dongia',
-        'soluong',
+        'soluong_tonkho',
     ];
 
     // Các cột muốn ẩn khi chuyển sang JSON/Array (Mật khẩu, token...)

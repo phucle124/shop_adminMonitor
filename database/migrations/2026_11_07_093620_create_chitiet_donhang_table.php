@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('chitiet_donhang', function (Blueprint $table) {
             $table->id('madh_chitiet');
             $table->double('giaban');
+            $table->unsignedSmallInteger('soluong_mua');
 
             $table->unsignedBigInteger('madh');
             $table->unsignedBigInteger('masp');

@@ -13,11 +13,12 @@ class ChiTiet_DonHang extends Model
     protected $primaryKey = 'madh_chitiet';
 
     // Các cột cho phép ghi dữ liệu hàng loạt (Mass Assignment)
-    protected $fillable = [
+    protected $fillable = [//Mass PHAI trung voi cac column tren database
         // 'ten_cot',
         'giaban',
-        'madh', //Luu y: PHẢI gán FK
-        'masp', //Luu y: PHẢI gán FK
+        'soluong_mua',
+        'madh', // FK
+        'masp', // FK
         
     ];
 

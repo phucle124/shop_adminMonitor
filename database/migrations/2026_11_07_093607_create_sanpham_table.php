@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('tensp',100);
             $table->text('mota');
             $table->unsignedInteger('dongia');
-            $table->unsignedInteger('soluong');
+            $table->unsignedInteger('soluong_tonkho');
             $table->timestamps();
         });
     }
