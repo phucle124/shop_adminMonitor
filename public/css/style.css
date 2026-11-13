@@ -1,0 +1,79 @@
+/*CSS Trang register.blade.php*/
+
+.register-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.register-form{
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    width: 100%;
+    max-width: 28rem;
+    padding: 1.875rem;
+    background-color: #fff;
+    border: 1px solid #999999;
+    
+}
+
+.form-field{
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
+
+.form-field label {
+    font-size: 0.9375;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-field input{
+    padding: 11px 12px;
+    font-size: 14px;
+    border: 1px solid #c7c7c7;
+}
+
+.form-field input:focus{
+    border-color: #7cdcff;
+}
+
+.auth-btn{
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    background-color: #0d6efd;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.auth-btn:hover{
+    background-color: #3eb2ff;
+}
+
+.auth-message{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: auto;
+    margin: 0 auto 20px;
+    padding: 12px 20px;
+
+    color: rgb(0, 255, 136);
+    font-weight: bold;
+    font-size: 1.25rem;
+    background-color: #008280;
+}
+
+.err-message{
+    color: red;
+    font-weight: bold;
+    font-size: 0.9375rem;
+}

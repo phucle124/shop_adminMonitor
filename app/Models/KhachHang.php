@@ -18,6 +18,7 @@ class KhachHang extends Model
         'hoten',
         'email',
         'sdt',
+        'matkhau',
         'gioitinh',
     ];
 

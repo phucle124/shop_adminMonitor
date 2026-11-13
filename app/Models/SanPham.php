@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @mixin \Illuminate\Database\Eloquent\Builder
+ */
+
 class SanPham extends Model
 {
     // Tên bảng tương ứng trong DB (nếu khác chuẩn)

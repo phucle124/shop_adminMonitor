@@ -12,7 +12,7 @@ class SanPhamController extends Controller
      */
     public function index()
     {
-        //
+        //Getall Data + Trả về View Giao diện sanpham.index
     }
 
     /**
@@ -44,7 +44,7 @@ class SanPhamController extends Controller
      */
     public function edit(SanPham $sanPham)
     {
-        //
+        //Trả về View Giao diện edit
     }
 
     /**

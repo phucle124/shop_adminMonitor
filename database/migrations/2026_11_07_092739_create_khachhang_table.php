@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('hoten',50);
             $table->string('email',50);
             $table->string('sdt',10);
+            $table->string('matkhau',100);
             $table->string('diachi',100);
             $table->enum('gioitinh',['NAM','NU']);
             $table->timestamps();
