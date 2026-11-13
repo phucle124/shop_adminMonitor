@@ -28,7 +28,7 @@
 
             <div class="form-field">
                 <label>Email/Số điện thoại: </label>
-                <input type="email"  name="identifier" value="{{ old('identifier') }}">
+                <input type="text"  name="identifier" value="{{ old('identifier') }}">
                 @error('identifier')
                     <span class="err-message">{{ $message }}</span>
                 @enderror
