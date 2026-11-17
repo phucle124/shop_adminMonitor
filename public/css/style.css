@@ -1,3 +1,51 @@
+/*Cấu hình root chung*/
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f8f9fa;
+    color: black;
+    line-height: 1.6;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+/*Font Thêm vào*/
+
+@font-face {
+    font-family: 'Judson';
+    src: url("{{ storage_path('fonts/Judson-Bold.ttf') }}") format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    
+    src: url("{{ storage_path('fonts/fontsMontserratAlternates-Regular.ttf') }}") format('truetype');
+    font-family: "Montserrat Alternates";
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    src: url("{{ storage_path('fonts/fontsMontserratAlternates-Bold.ttf') }}") format('truetype');
+    font-family: "Montserrat Alternates";
+    font-weight: 700;
+    font-style: normal;
+}
+
 /*CSS Trang register.blade.php*/
 
 .register-container{
@@ -76,4 +124,274 @@
     color: red;
     font-weight: bold;
     font-size: 0.9375rem;
+}
+
+/* --- HEADER --- */
+header {
+    background-color: #6DABBA;
+    border-bottom: 1px solid #eaeaea;
+    padding: 0 50px;
+}
+
+.header-bar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    margin: 0 auto;
+}
+
+.header-bar-container > a .shop-name {
+    font-size: 2.18rem;
+    font-weight: bold;
+    color: #ffffff;
+    font-family: 'Judson';
+}
+.avatar-name{
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: #f0f0f0;
+}
+
+/* Profile bên phải header */
+.profile-container {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Khoảng cách giữa ảnh và tên */
+}
+
+.profile-container img {
+    width: 5vw;
+    top: 0;
+}
+
+
+
+
+/* --- NAVBAR --- */
+
+
+.navbar {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 30px;
+}
+
+.nav-links {
+    display: flex;
+    justify-content: center; /* Hoặc center nếu muốn menu ra giữa */
+    gap: 15%; /* Khoảng cách giữa các mục link nav */
+}
+
+.nav-links li a {
+    display: block;
+    
+    padding: 30px 0;
+    font-weight: 700;
+    font-size: 1.875rem;
+    transition: color 0.3s ease;
+}
+
+.nav-links li a:hover {
+    color: #3498db;
+}
+
+
+/* --- MAIN index --- */
+.main-khachhangindex {
+    width: 100%;
+    /* margin: 50px auto; */
+    padding: 1.5vw;
+    
+    
+    /*[tiêu đề] và [nội dung] theo chiều dọc */
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px; 
+}
+
+.content-title-index p {
+    font-size: 26px;
+    font-weight: 700;
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.content-index {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Khoảng cách giữa các đoạn văn */
+    color: #555;
+    font-size: 16px;
+    text-align: justify;
+}
+
+.content-index .slogan-index {
+    font-weight: 600;
+    font-style: italic;
+    color: #e74c3c;
+    text-align: center;
+    margin-top: 10px;
+}
+
+
+/*main-content*/
+.main-khachhangindex-content{
+    display: flex;
+    width: 45vw;
+    flex-direction: column;
+    margin-left: 2vw;
+}
+
+/*main-img*/
+.main-khachhangindex-img{
+    display: flex;
+    width: 41vw;
+    height: 30vw;
+    justify-content: flex-end;
+    margin-top: 2vw;
+}
+
+.main-khachhangindex-img img{
+    
+    height: fit-content;
+    width: 35vw;
+}
+
+
+
+/*Trang Products*/
+
+.product-container {
+    display: flex;
+    justify-content: space-between;
+   
+    gap: 3vw;
+    
+
+    margin: 22px 40px 0 51px;
+}
+
+.product-card {
+    width: 25vw;
+    height: 48vh;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 22px;
+    overflow: hidden;
+
+    cursor: pointer;
+}
+
+.product-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-card a {
+    width: 100%;
+    height: 100%;
+    display: grid;
+
+    text-decoration: none;
+}
+
+
+.img-normal {
+    filter: blur(3px);
+    background-color: rgba(0, 0, 0, 0.1);
+    transition: transform 0.4s ease;
+}
+
+
+.img-special {
+    filter: blur(4px);
+    transition: transform 0.4s ease;
+    
+}
+
+
+.img-ai {
+    filter: blur(2px);
+    background-color: rgba(0, 0, 0, 0.15);
+    transition: transform 0.4s ease;
+}
+
+.product-card a img,
+.product-card a p {
+    grid-area: 1 / 1;       /*Case Study khi khong dung positon: absolute*/
+}
+
+.product-card a p {
+    width: 100%;
+    margin: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-family: 'Montserrat Alternates', sans-serif;
+    font-size: clamp(1.2rem, 2.5vw, 3rem);
+    font-weight: bold;
+    line-height: 3;
+    
+    z-index: 1;
+}
+
+.typeNormal-title{
+    color: #3C86FF;
+    transition: transform 0.4s ease;
+}
+
+.typeSpecial-title{
+    color: #E4E4E4;
+    transition: transform 0.4s ease;
+}
+
+.typeAI-title{
+    color: #45FFA5;
+    transition: transform 0.4s ease;
+}
+
+
+
+.typeNormal-title:hover{
+    transform: scale(1.2);
+    
+}
+
+.typeSpecial-title:hover{
+    transform: scale(1.2);
+}
+
+.typeAI-title:hover{
+    transform: scale(1.2);
+    
+}
+
+
+.product-card a:hover .img-normal {
+    filter: blur(0px);
+    
+}
+
+
+.product-card a:hover .img-special {
+    filter: blur(0px);
+       
+}
+
+
+.product-card a:hover .img-ai {
+    filter: blur(0px);
+    
 }

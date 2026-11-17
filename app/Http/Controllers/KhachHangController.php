@@ -13,6 +13,8 @@ class KhachHangController extends Controller
     public function index()
     {
         //
+        $ten_avatar = session('ten_khach_hang');
+        return view('KhachHangView.index',compact('ten_avatar'));
     }
 
     /**
