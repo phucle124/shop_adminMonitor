@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GiaoDichQRController;
 use App\Http\Controllers\KhachHangController;
+use App\Http\Controllers\SanPhamController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -17,7 +19,7 @@ Route::get('register', [AuthController::class,'showRegister']);
 Route::post('register', [AuthController::class, 'register'])->name('register.post');
 
 //Khách đăng nhập
-Route::get('login', [AuthController::class, 'showLogin_Khach']);
+Route::get('login', [AuthController::class, 'showLogin_Khach'])->name('login');
 Route::post('login',[AuthController::class, 'login_Khach'])->name('login.post');
 
 
@@ -26,7 +28,26 @@ Route::get('/KH-index',[KhachHangController::class,'index'])->name('KhachHang.in
 
 
 //Product
-Route::view('products','KhachHangView.products');
+Route::view('products','KhachHangView.products')->name('sanphamIntroduce.index');
+
+Route::get('/productNormal',[SanPhamController::class,'indexNormal'])->name('sanpham1.index');
+Route::get('/productSpecial',[SanPhamController::class,'indexSpecial'])->name('sanpham2.index');
+
+Route::get('/productDetails/{masp}',[SanPhamController::class,'show'])->name('sanpham.show');
+
+Route::post('/khach-hang/tao-donhang-tmp', [KhachHangController::class,'DonHangTmp'])->name('donhangtmp.post');
+
+Route::get('/khach-hang/xem-lai-don-hang', [KhachHangController::class, 'xemLaiDonHang'])->name('donhangtmp.preview');
+
+Route::post('/khach-hang/xac-nhan-don-hang',[KhachHangController::class, 'xacNhanDatHang'])->name('donhang.confirm');
+
+Route::post('/vietqr/webhook', [GiaoDichQRController::class, 'handleVietQRWebhook']);
+
+Route::get('/don-hang/check-status/{madh}', [GiaoDichQRController::class, 'checkPaymentStatus'])->name('donhang.check-status');
+
+Route::get('/don-hang/thanh-cong/{madh}', function ($madh) {
+    return view('KhachHangView.PaymentSuccess', compact('madh'));
+})->name('donhang.thanhcong');
 
 //Quản trị viên đăng nhập
 // Route::get('login', [AuthController::class, 'showLogin_Admin']);

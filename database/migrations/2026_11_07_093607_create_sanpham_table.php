@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('sanpham', function (Blueprint $table) {
             $table->id('masp');
             $table->string('tensp',100);
+            $table->enum('loaisp',['NORMAL','SPECIAL','AI']);
+            $table->string('hinh',150);
             $table->text('mota');
             $table->unsignedInteger('dongia');
             $table->unsignedInteger('soluong_tonkho');

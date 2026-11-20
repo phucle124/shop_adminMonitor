@@ -76,13 +76,13 @@ class DonHangController extends Controller
 
         $sp = SanPham::find($req->masp);
         if(!$sp){
-            return redirect()->route('sanpham.details')->with('error','Không tìm thấy sản phẩm !');
+            return redirect()->route('sanpham.show')->with('error','Không tìm thấy sản phẩm !');
         }
 
         $sl_Mua = $req->soluong_mua;
 
         if($sl_Mua > $sp->soluong_tonkho)
-            return back()->with('error', 'Sản phẩm không đủ') //Dùng 'back()' Thay vi 'redirect()->route('')'
+            return back()->with('error', 'Sản phẩm không đủ')
                             ->withInput(); //Giữ lại input khách đã nhập
 
         //Tổng tiền khách cần thanh toán
@@ -111,9 +111,34 @@ class DonHangController extends Controller
                 return $donhang;
             });
 
+            return redirect()->route('donhang.confirm',['madh'=> $donhang->madh])->with('success','Tạo đơn hàng thành công!');
+
         }catch(\Exception){
             DB::rollBack();
             return back()->with('error','Lỗi giao dịch !')->withInput();
         }
+    }
+
+    public function checkPaymentStatus($madh){
+        $donHang = DonHang::where('madh', $madh)->first();
+
+        if (!$donHang) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy đơn hàng'], 404);
+        }
+
+   
+        if ($donHang->trangthai_thanhtoan == 'DA_THANH_TOAN') {
+            return response()->json([
+                'success' => true,
+                'is_paid' => true,
+                'message' => 'Thanh toán thành công!'
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'is_paid' => false,
+            'message' => 'Đang chờ thanh toán...'
+        ]);
     }
 }

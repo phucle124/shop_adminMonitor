@@ -7,7 +7,7 @@
     <title>Document</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 </head>
-<body>
+<body class="page-wrapper">
     <header>
         <div class="header-bar-container">
             <a href="{{ route('KhachHang.index') }}">
@@ -23,35 +23,37 @@
         <nav class="navbar">
             <ul class="nav-links">
                 <li><a href="{{ route('KhachHang.index') }}">Shop</a></li>
-                <li><a href="{{ route('KhachHang.index') }}">Products</a></li>
+                <li><a href="{{ route('sanphamIntroduce.index') }}">Products</a></li>
                 <li><a href="{{ route('KhachHang.index') }}">About us</a></li>
                 <li><a href="{{ route('KhachHang.index') }}">Contacts</a></li>
             </ul>
         </nav>
     </div>
-    <div class="introduce-scripts">
-        <h3>Tùy chọn phân khúc sản phẩm mà bạn muốn</h3>
-        <p>Các nhóm sản phẩm phổ biến nhất hiện nay: </p>
-    </div>
-    <div class="product-container">
-        <div class="product-card">
-            <a href="/">
-                <img class="img-normal" src="{{ asset('storage/images/typeNormal.svg') }}" alt="">
-                <p class="typeNormal-title">Phổ thông</p>
-            </a>
+    <div class="main-product-card">
+        <div class="introduce-scripts">
+            <h3>Tùy chọn phân khúc sản phẩm mà bạn muốn</h3>
+            <p>Các nhóm sản phẩm phổ biến nhất hiện nay: </p>
         </div>
-        <div class="product-card">
-            <a href="/">
-                <img class="img-special" src="{{ asset('storage/images/typeSpecial.svg') }}" alt="">
-                <p class="typeSpecial-title">Chuyên dụng</p>
-                
-            </a>
-        </div>
-        <div class="product-card">
-            <a href="/">
-                <img class="img-ai" src="{{ asset('storage/images/typeAI.svg') }}" alt="">
-                <p class="typeAI-title">Tích hợp AI</p>
-            </a>
+        <div class="product-container">
+            <div class="product-card">
+                <a href="{{ route('sanpham1.index') }}">
+                    <img class="img-normal" src="{{ asset('storage/images/typeNormal.svg') }}" alt="">
+                    <p class="typeNormal-title">Phổ thông</p>
+                </a>
+            </div>
+            <div class="product-card">
+                <a href="{{ route('sanpham2.index') }}">
+                    <img class="img-special" src="{{ asset('storage/images/typeSpecial.svg') }}" alt="">
+                    <p class="typeSpecial-title">Chuyên dụng</p>
+                    
+                </a>
+            </div>
+            <div class="product-card">
+                <a href="/">
+                    <img class="img-ai" src="{{ asset('storage/images/typeAI.svg') }}" alt="">
+                    <p class="typeAI-title">Tích hợp AI</p>
+                </a>
+            </div>
         </div>
     </div>
 </body>

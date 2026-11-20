@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class SanPham extends Model
 {
+    use HasFactory;
     // Tên bảng tương ứng trong DB (nếu khác chuẩn)
     protected $table = 'sanpham';
 

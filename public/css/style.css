@@ -265,6 +265,13 @@ header {
 
 /*Trang Products*/
 
+.page-wrapper{
+    background: linear-gradient(#DEE9FF ,#82B0C6);
+    margin: 0;
+    height: 100vh;
+
+}
+
 .product-container {
     display: flex;
     justify-content: space-between;
@@ -394,4 +401,119 @@ header {
 .product-card a:hover .img-ai {
     filter: blur(0px);
     
+}
+
+/* POPUP QR ngay tại trang donhangPreview->"xác nhận đơn hàng"*/
+
+.qr-modal-overlay {
+    display: none; /* Mặc định ẩn */
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Màn hình mờ */
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+.qr-modal-container {
+    background: #ffffff;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    animation: fadeInModal 0.3s ease-in-out;
+}
+.qr-modal-header {
+    background-color: #007bff;
+    color: #ffffff;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 16px;
+    font-weight: bold;
+}
+.qr-modal-close {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+    cursor: pointer;
+}
+.qr-modal-body {
+    padding: 20px;
+    text-align: center;
+}
+.qr-info-box p {
+    margin: 2px 0;
+    color: #666;
+    font-size: 14px;
+}
+.qr-info-box h3 {
+    margin: 6px 0 14px 0;
+    color: #dc3545;
+    font-size: 20px;
+}
+.qr-image-wrapper {
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #f8f9fa;
+    display: inline-block;
+    margin-bottom: 14px;
+}
+.qr-image-wrapper img {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    display: block;
+}
+.qr-alert-box {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: left;
+    font-size: 13px;
+    margin-bottom: 14px;
+}
+.qr-alert-box ul {
+    margin: 4px 0 0 16px;
+    padding: 0;
+}
+.qr-loading-text {
+    color: #007bff;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.qr-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #007bff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+.qr-modal-footer {
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    text-align: center;
+    border-top: 1px solid #eee;
+}
+.qr-btn-close {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.qr-btn-close:hover {
+    background-color: #5a6268;
 }

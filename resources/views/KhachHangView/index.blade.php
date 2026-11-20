@@ -23,7 +23,7 @@
         <nav class="navbar">
             <ul class="nav-links">
                 <li><a href="{{ route('KhachHang.index') }}">Shop</a></li>
-                <li><a href="{{ route('KhachHang.index') }}">Products</a></li>
+                <li><a href="{{ route('sanphamIntroduce.index') }}">Products</a></li>
                 <li><a href="{{ route('KhachHang.index') }}">About us</a></li>
                 <li><a href="{{ route('KhachHang.index') }}">Contacts</a></li>
             </ul>
