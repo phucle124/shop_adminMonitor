@@ -1,5 +1,5 @@
 
-FROM php:8.3-apache
+FROM php:8.4-apache
 
 # Cài các PHP extensions cần thiết
 RUN apt-get update && apt-get install -y \
