@@ -25,6 +25,8 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 # Cấu hình Apache trỏ vào public/
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
+RUN php artisan config:clear && php artisan route:clear && php artisan view:clear
+
 RUN sed -ri 's!/var/www/html!/var/www/html/public!g' \
     /etc/apache2/sites-available/*.conf \
     /etc/apache2/apache2.conf \
@@ -36,4 +38,4 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
 
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+CMD ["sh", "-c", "php artisan config:clear && php artisan route:clear && php artisan view:clear && apache2-foreground"]
