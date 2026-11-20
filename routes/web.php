@@ -24,7 +24,7 @@ Route::post('login',[AuthController::class, 'login_Khach'])->name('login.post');
 
 
 //index Khách (Cần thêm middleware Check session('ma_khach_hang'))
-Route::get('/KH-index',[KhachHangController::class,'index'])->name('KhachHang.index');
+Route::get('/',[KhachHangController::class,'index'])->name('KhachHang.index');
 
 
 //Product
@@ -41,7 +41,7 @@ Route::get('/khach-hang/xem-lai-don-hang', [KhachHangController::class, 'xemLaiD
 
 Route::post('/khach-hang/xac-nhan-don-hang',[KhachHangController::class, 'xacNhanDatHang'])->name('donhang.confirm');
 
-Route::post('/vietqr/webhook', [GiaoDichQRController::class, 'handleVietQRWebhook']);
+Route::post('/vqr/bank/api/test/transaction-callback', [GiaoDichQRController::class, 'handleVietQRWebhook']);
 
 Route::get('/don-hang/check-status/{madh}', [GiaoDichQRController::class, 'checkPaymentStatus'])->name('donhang.check-status');
 
