@@ -28,7 +28,7 @@ Route::get('/',[KhachHangController::class,'index'])->name('KhachHang.index');
 
 
 //Product
-Route::view('products','KhachHangView.products')->name('sanphamIntroduce.index');
+Route::get('/products',[SanPhamController::class, 'index'])->name('sanphamIntroduce.index');
 
 Route::get('/productNormal',[SanPhamController::class,'indexNormal'])->name('sanpham1.index');
 Route::get('/productSpecial',[SanPhamController::class,'indexSpecial'])->name('sanpham2.index');

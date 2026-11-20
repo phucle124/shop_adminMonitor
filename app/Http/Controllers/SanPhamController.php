@@ -14,9 +14,8 @@ class SanPhamController extends Controller
     {
         //Getall Data + Trả về View Giao diện sanpham.index
 
-        
-        
-
+        $ten_avatar = session('ten_khach_hang');
+        return view('KhachHangView.products',compact('ten_avatar'));
         
     }
 

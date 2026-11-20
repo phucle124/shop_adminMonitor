@@ -69,7 +69,7 @@
         <!-- 3. Khu vực nút bấm hành động -->
         <div class="form-actions">
             <!-- Nút quay lại mua tiếp / hủy đơn tạm -->
-            <a href="{{ route('KhachHang.index') }}" class="btn btn-back"><- Chọn sản phẩm khác</a>
+            <a href="{{ route('sanphamIntroduce.index') }}" class="btn btn-back"><- Chọn sản phẩm khác</a>
 
             <!-- Form gửi yêu cầu Xác nhận đặt hàng chính thức vào Database -->
             <form action="#" method="POST">
@@ -81,50 +81,6 @@
     </div>
 
 
-    <!-- Popup QR Thanh Toán -->
-    <div id="qrPaymentModal" class="qr-modal-overlay">
-        <div class="qr-modal-container">
-            
-            <!-- Header Modal -->
-            <div class="qr-modal-header">
-                <span>Quét mã QR thanh toán</span>
-                <button type="button" class="qr-modal-close" onclick="closeQrModal()">&times;</button>
-            </div>
-
-            <!-- Body Modal -->
-            <div class="qr-modal-body">
-                <div class="qr-info-box">
-                    <p>Mã đơn hàng: <strong id="modal-madh" style="color: #333;">--</strong></p>
-                    <h3 id="modal-tongtien">0 đ</h3>
-                </div>
-
-                <!-- Khung chứa ảnh QR động -->
-                <div class="qr-image-wrapper">
-                    <img id="qr-image-src" src="" alt="Mã QR Thanh Toán">
-                </div>
-
-                <!-- Lưu ý nội dung chuyển khoản -->
-                <div class="qr-alert-box">
-                    <strong>Lưu ý:</strong>
-                    <ul>
-                        <li>Nội dung CK: <strong id="modal-noidung" style="color: #007bff;">--</strong></li>
-                        <li style="color: #28a745; margin-top: 4px; font-weight: bold;">Hệ thống đang chờ thanh toán tự động...</li>
-                    </ul>
-                </div>
-
-                <!-- Trạng thái chờ (Loading) -->
-                <div class="qr-loading-text">
-                    <div class="qr-spinner"></div>
-                    <span>Đang lắng nghe giao dịch từ ngân hàng...</span>
-                </div>
-            </div>
-
-            <!-- Footer Modal -->
-            <div class="qr-modal-footer">
-                <button type="button" class="qr-btn-close" onclick="closeQrModal()">Hủy / Đóng</button>
-            </div>
-
-        </div>
-    </div>
+    
 </body>
 </html>

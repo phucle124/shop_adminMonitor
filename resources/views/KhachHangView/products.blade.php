@@ -15,7 +15,7 @@
             </a>
             <div class="profile-container">
                 <img src="{{ asset('storage/avatar_icon/iconMale.svg') }}">
-                <span class="avatar-name">{ $ten_avatar }</span>
+                <span class="avatar-name">{{ $ten_avatar }}</span>
             </div>
         </div>
     </header>
