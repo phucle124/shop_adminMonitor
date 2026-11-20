@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -27,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
         // $this->configureDefaults();
         Schema::defaultStringLength(191);
 
-        if ($this->app->environment('production') || str_starts_with(config('app.url'), 'https://')) {
+        if ($this->app->environment('production') || str_starts_with((string)config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
     }

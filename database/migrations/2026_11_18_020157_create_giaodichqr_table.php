@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('qr_url_pic')->nullable();
             $table->string('noi_dung_ck')->default('Nội dung chuyển khoản mặc định');   //content
             $table->string('stk_ngan_hang');    //bankAccount
-            $table->string('ten_ngan_hang');        //bankCode
+            $table->string('ma_ngan_hang')->default('BIDV');        //bankCode
             $table->enum('trang_thai_qr',['SUCCESS','FAILED'])->nullable();      //Response->status
 
             $table->unsignedBigInteger('madh');
