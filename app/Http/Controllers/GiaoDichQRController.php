@@ -10,7 +10,9 @@ use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 
@@ -91,112 +93,7 @@ class TransactionResponseObject{
 /*Chiều từ VietQR đổ về*/
 class GiaoDichQRController extends Controller
 {
-    
 
-    public function handleVietQRWebhook(Request $request)
-    {
-        
-
-        // Lấy dữ liệu JSON mà VietQR gửi sang
-        $data = $request->all();
-
-       
-        Log::info('VietQR Webhook Data:', $data);
-
-        try {
-            // Ánh xạ các trường dữ liệu dựa theo cấu trúc payload bạn đã cung cấp
-            $maTraCuuQr = $data['qrCode'] ?? null;          // ma_tra_cuu_qr    (giaodichqr)
-            $soTien     = $data['amount'] ?? 0;             // sotien           (giaodichqr)
-            $noiDung    = $data['content'] ?? '';           // noi_dung_ck      (giaodichqr)
-            $stk        = $data['bankAccount'] ?? '';       // stk_ngan_hang    (giaodichqr)
-            $tenNganHang= $data['bankCode'] ?? '';          // ma_ngan_hang    (giaodichqr)
-            $orderId    = $data['orderId'] ?? null;         // madh         (FK - giaodichqr)
-
-            // Kiểm tra bắt buộc
-            if (!$orderId || !$soTien) {
-                Log::warning('Webhook: Thiếu orderId hoặc amount.');
-                return response()->json(['success' => false, 'message' => 'Missing fields'], 400);
-            }
-
-            // 3. Tìm đơn hàng trong Database
-            $donHang = DonHang::with('chitiet_donhangs')->where('madh', $orderId)->first();
-
-            if (!$donHang) {
-                Log::warning("Webhook: Không tìm thấy đơn hàng mã số #{$orderId}");
-                return response()->json(['success' => false, 'message' => 'Order not found'], 404);
-            }
-
-            // Kiểm tra xem đơn hàng đã được thanh toán từ trước chưa (Tránh webhook gọi trùng lặp)
-            if ($donHang->trangthai_thanhtoan === 'DA_THANH_TOAN') {
-                return response()->json(['success' => true, 'message' => 'Order paid']);
-            }
-
-            // Kiểm tra số tiền chuyển khoản có = tổng tiền đơn hàng yêu cầu không [Theo nghiệp vụ VNPay về kiểm tra Đơn hàng]
-            
-            if ((float)$soTien < (float)$donHang->tongtien) {
-                Log::warning("Số tiền thanh toán cụ thể là ({$soTien}), ít hơn tổng tiền yêu cầu là ({$donHang->tongtien}) của đơn hàng {$orderId}");
-                
-                // Lưu lại record FAILED 
-                GiaoDichQr::create([
-                    'ma_tra_cuu_qr' => $maTraCuuQr ?? null, //qrCode
-                    'sotien' => $soTien,
-                    'noi_dung_ck' => $noiDung,
-                    'stk_ngan_hang' => $stk,
-                    'ten_ngan_hang' => $tenNganHang,
-                    'trang_thai_qr' => 'FAILED',
-                    'madh' => $donHang->madh,
-                ]);
-
-                return response()->json(['success' => true, 'message' => 'Amount mismatch recorded']);
-            }
-
-            
-            DB::transaction(function () use ($donHang, $maTraCuuQr, $soTien, $noiDung, $stk, $tenNganHang) {
-              
-                $donHang->update([
-                    'trangthai_donhang' => 'DA_XAC_NHAN',   // Đơn hàng chính thức được xác nhận
-                    'trangthai_thanhtoan' => 'DA_THANH_TOAN', // Đã hoàn tất thanh toán
-                ]);
-
-               
-                foreach ($donHang->chitiet_donhangs as $chiTiet) {
-                    $sanPham = SanPham::lockForUpdate()->find($chiTiet->masp);
-                    if ($sanPham) {
-                        $sanPham->soluong_tonkho -= $chiTiet->soluong_mua;  //Trừ tồn kho
-                        $sanPham->save();
-                    }
-                }
-
-                // Ghi lại record đã ck thành công vào bảng giaodichqr
-                GiaoDichQr::create([
-                    'ma_tra_cuu_qr' => $maTraCuuQr,
-                    'sotien' => $soTien,
-                    'noi_dung_ck' => $noiDung,
-                    'stk_ngan_hang' => $stk,
-                    'ten_ngan_hang' => $tenNganHang,
-                    'trang_thai_qr' => 'SUCCESS',
-                    'madh' => $donHang->madh,
-                ]);
-            });
-
-            Log::info("Webhook: Thanh toán thành công cho đơn hàng #{$orderId}");
-
-            // *BẮT BUỘC => Trả về thông báo cho VietQR biết hệ thống đã nhận và xử lý thành công
-            return response()->json([
-                'success' => true,
-                'message' => 'Webhook processed successfully'
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Lỗi xử lý VietQR Webhook: ' . $e->getMessage());
-            // Vẫn trả về 200 hoặc mã lỗi tùy tài liệu VietQR yêu cầu, 
-            // nhưng thường nên trả 500 nếu lỗi hệ thống để bên VietQR biết và push lại sau.
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
 
 
     public function transactionSync(Request $request)
@@ -271,11 +168,11 @@ class GiaoDichQRController extends Controller
                 // Kiểm tra số tiền thanh toán có đủ không
                 if ($soTien < (float) $donHang->tongtien) {
                     GiaoDichQR::create([
-                        'ma_tra_cuu_qr' => $maTraCuuQr,
-                        'sotien'        => $soTien,
-                        'noi_dung_ck'   => $noiDung,
-                        'stk_ngan_hang' => $stk,
-                        'ten_ngan_hang' => $tenNganHang,
+                        'ma_tra_cuu_qr' => $maTraCuuQr, //qrCode
+                        'sotien'        => $soTien,     //amount
+                        'noi_dung_ck'   => $noiDung,    //content
+                        'stk_ngan_hang' => $stk,        //bankAccount
+                        'ma_ngan_hang' => $tenNganHang,    
                         'trang_thai_qr' => $callback->status,
                         'madh'          => $donHang->madh,
                     ]);
@@ -301,7 +198,7 @@ class GiaoDichQRController extends Controller
                     'sotien'        => $soTien,
                     'noi_dung_ck'   => $noiDung,
                     'stk_ngan_hang' => $stk,
-                    'ten_ngan_hang' => $tenNganHang,
+                    'ma_ngan_hang' => $tenNganHang,
                     'trang_thai_qr' => $callback->status,
                     'madh'          => $donHang->madh,
                 ]);
@@ -337,4 +234,63 @@ class GiaoDichQRController extends Controller
     {
         return response()->json($errorResponse, $statusCode);
     }
+
+
+
+    public function testTransactionCallback(Request $request){
+        try {
+            $accessToken = Cache::get('vietqr_access_token');
+
+            $info = [
+                'bankAccount' => (string) $request->input('bankAccount', ''),
+                'content'     => (string) $request->input('content', ''),
+                'amount'      => (string) $request->input('amount', ''),
+                'bankCode'    => (string) $request->input('bankCode', ''),
+                'transType'   => (string) $request->input('transType', 'C'),
+            ];
+
+            $response = Http::withToken($accessToken)
+                ->acceptJson()
+                ->asJson()
+                ->timeout(15)
+                ->post('https://dev.vietqr.org/vqr/bank/api/test/transaction-callback', $info);
+
+            $body   = $response->json() ?? [];
+            $status = strtoupper((string) (
+                $body['status']
+                ?? data_get($body, 'data.status')
+                ?? ($response->successful() ? 'SUCCESS' : 'FAILED')
+            ));
+
+            if ($status === 'SUCCESS') {
+                return response()->json([
+                    'status'  => 'SUCCESS',
+                    'message' => '',
+                ], 200);
+            }
+
+            $errCode = (string) (
+                $body['message']
+                ?? $body['errorReason']
+                ?? data_get($body, 'data.message')
+                ?? ('HTTP_' . $response->status())
+            );
+
+            return response()->json([
+                'status'  => 'FAILED',
+                'message' => $errCode,
+            ], $response->successful() ? 200 : $response->status());
+        } catch (\Throwable $e) {
+            Log::error('Lỗi gọi testTransactionCallback VietQR', [
+                'message' => $e->getMessage(),
+                'line'    => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'status'  => 'FAILED',
+                'message' => 'TEST_CALLBACK_FAILED',
+            ], 500);
+        }
+    }
 }
+

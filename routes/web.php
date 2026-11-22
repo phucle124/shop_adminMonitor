@@ -48,8 +48,8 @@ Route::prefix('vqr')->group(function (){
     Route::post('/api/token_generate', [VietQrAuthController::class, 'tokenGenerate'])->name('vqr.token.generate');
 
     Route::post('/api/qr/generate-customer',[VietQrAuthController::class, 'getCustomerQr'])->name('vqr.customer.generate');
-
     Route::post('/bank/api/transaction-sync', [GiaoDichQRController::class, 'transactionSync'])->name('vqr.transaction.sync');
+    Route::post('/bank/api/test/transaction-callback',[GiaoDichQRController::class,'testTransactionCallback'])->name('vqr.callback.test');
 
     // Route::post('/order/generate-qr', [GiaoDichQRController::class, 'createQrForOrder'])->name('vqr.order.generate_qr');
 
