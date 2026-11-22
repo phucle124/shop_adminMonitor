@@ -18,8 +18,8 @@ class VietQrAuthController extends Controller
     public function getVietQrAccessToken(): string 
     {
         return Cache::remember('vietqr_access_token', now()->addMinutes(50), function () {
-            $username = env('VIETQR_AUTH_USERNAME');
-            $password = env('VIETQR_AUTH_PASSWORD');
+            $username = config('services.vietqr.username');
+            $password = config('services.vietqr.password');
 
             $response = Http::withBasicAuth($username, $password)->acceptJson()->timeout(15)->post('https://api.vietqr.org/vqr/api/token_generate');
 

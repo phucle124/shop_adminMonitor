@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'vietqr' => [
+        'username' => env('VIETQR_AUTH_USERNAME'), 
+        'password' => env('VIETQR_AUTH_PASSWORD')
+    ],
+
 ];
