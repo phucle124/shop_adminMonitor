@@ -128,7 +128,7 @@ class GiaoDichQRController extends Controller
         $callback = new TransactionCallback($data);
 
         $orderId    = $callback->orderId;
-        $soTien     = (float) ($callback->amount ?? 0);
+        $soTien     = $callback->amount;
         $noiDung    = $callback->content ?? '';
         $stk        = $callback->bankaccount ?? '';
         $tenNganHang= $callback->serviceCode ?? '';
@@ -166,7 +166,7 @@ class GiaoDichQRController extends Controller
                 }
 
                 // Kiểm tra số tiền thanh toán có đủ không
-                if ($soTien < (float) $donHang->tongtien) {
+                if ($soTien < $donHang->tongtien) {
                     GiaoDichQR::create([
                         'ma_tra_cuu_qr' => $maTraCuuQr, //qrCode
                         'sotien'        => $soTien,     //amount
@@ -246,7 +246,7 @@ class GiaoDichQRController extends Controller
                 'content'     => (string) $request->input('content', ''),
                 'amount'      => (string) $request->input('amount', ''),
                 'bankCode'    => (string) $request->input('bankCode', ''),
-                'transType'   => (string) $request->input('transType', 'C'),
+                'transType'   => 'C',
             ];
 
             $response = Http::withToken($accessToken)
