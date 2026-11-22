@@ -5,67 +5,93 @@ namespace App\Http\Controllers;
 use App\Models\DonHang;
 use App\Models\GiaoDichQR;
 use App\Models\SanPham;
+use Exception;
+use Firebase\JWT\ExpiredException;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+
+
+class TransactionCallback
+{
+    public $transactionid;
+    public $transactiontime;
+    public $referencenumber;
+    public $amount;
+    public $content;
+    public $bankaccount;
+    public $orderId;
+    public $sign;
+    public $terminalCode;
+    public $urlLink;
+    public $serviceCode;
+    public $subTerminalCode;
+    public $status;
+
+    public function __construct($data)
+    {
+        $this->transactionid   = $data['transactionid'] ?? null;
+        $this->transactiontime = $data['transactiontime'] ?? null;
+        $this->referencenumber = $data['referencenumber'] ?? null;
+        $this->amount          = $data['amount'] ?? null;
+        $this->content         = $data['content'] ?? null;
+        $this->bankaccount     = $data['bankaccount'] ?? null;
+        $this->orderId         = $data['orderId'] ?? null;
+        $this->sign            = $data['sign'] ?? null;
+        $this->terminalCode    = $data['terminalCode'] ?? null;
+        $this->urlLink         = $data['urlLink'] ?? null;
+        $this->serviceCode     = $data['serviceCode'] ?? null;
+        $this->subTerminalCode = $data['subTerminalCode'] ?? null;
+        $this->status = $data['status'] ?? null;
+    }
+}
+
+// Lớp model cho success response
+class SuccessResponse {
+    public $error;
+    public $errorReason;
+    public $toastMessage;
+    public $object;
+
+    public function __construct($error, $errorReason, $toastMessage, $object) {
+        $this->error = $error;
+        $this->errorReason = $errorReason;
+        $this->toastMessage = $toastMessage;
+        $this->object = $object;
+    }
+}
+
+// Lớp model cho lỗi response
+class ErrorResponse {
+    public $error;
+    public $errorReason;
+    public $toastMessage;
+    public $object;
+
+    public function __construct($error, $errorReason, $toastMessage, $object) {
+        $this->error = $error;
+        $this->errorReason = $errorReason;
+        $this->toastMessage = $toastMessage;
+        $this->object = $object;
+    }
+}
+
+class TransactionResponseObject{
+    public $reftransactionid;
+
+    public function __construct($reftransactionid){
+        $this->reftransactionid = $reftransactionid;
+    }
+}
+
+
+/*Chiều từ VietQR đổ về*/
 class GiaoDichQRController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(GiaoDichQR $giaoDichQR)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(GiaoDichQR $giaoDichQR)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, GiaoDichQR $giaoDichQR)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(GiaoDichQR $giaoDichQR)
-    {
-        //
-    }
+    
 
     public function handleVietQRWebhook(Request $request)
     {
@@ -83,7 +109,7 @@ class GiaoDichQRController extends Controller
             $soTien     = $data['amount'] ?? 0;             // sotien           (giaodichqr)
             $noiDung    = $data['content'] ?? '';           // noi_dung_ck      (giaodichqr)
             $stk        = $data['bankAccount'] ?? '';       // stk_ngan_hang    (giaodichqr)
-            $tenNganHang= $data['bankCode'] ?? '';          // ten_ngan_hang    (giaodichqr)
+            $tenNganHang= $data['bankCode'] ?? '';          // ma_ngan_hang    (giaodichqr)
             $orderId    = $data['orderId'] ?? null;         // madh         (FK - giaodichqr)
 
             // Kiểm tra bắt buộc
@@ -170,5 +196,145 @@ class GiaoDichQRController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+
+    public function transactionSync(Request $request)
+    {
+        $secretKey = env('VIETQR_JWT_SECRET');
+        $algo = env('VIETQR_JWT_TYPE');
+
+        $authHeader = $request->header('Authorization') ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+        $bearerPrefix = 'Bearer ';
+
+        if (empty($authHeader) || !str_starts_with($authHeader, $bearerPrefix)) {
+            return $this->respondWithError(
+                new ErrorResponse(true, 'INVALID_AUTH_HEADER', 'Authorization header is missing or invalid', null),
+                401
+            );
+        }
+
+        $token = substr($authHeader, strlen($bearerPrefix));
+
+        if (!$this->validateToken($token, $secretKey, $algo)) {
+            return $this->respondWithError(
+                new ErrorResponse(true, 'INVALID_TOKEN', 'Invalid or expired token', null),
+                401
+            );
+        }
+
+        $data = json_decode($request->getContent(), true);
+        if (!is_array($data)) {
+            $data = $request->all();
+        }
+
+        $callback = new TransactionCallback($data);
+
+        $orderId    = $callback->orderId;
+        $soTien     = (float) ($callback->amount ?? 0);
+        $noiDung    = $callback->content ?? '';
+        $stk        = $callback->bankaccount ?? '';
+        $tenNganHang= $callback->serviceCode ?? '';
+        $maTraCuuQr = $callback->transactionid ?? $callback->referencenumber ?? null;
+
+        if (empty($orderId) || $soTien <= 0) {
+            return $this->respondWithError(
+                new ErrorResponse(true, 'INVALID_PAYLOAD', 'Missing or invalid orderId/amount', null),
+                400
+            );
+        }
+
+        try {
+            $refTransactionId = DB::transaction(function () use (
+                $callback,
+                $orderId,
+                $soTien,
+                $noiDung,
+                $stk,
+                $tenNganHang,
+                $maTraCuuQr
+            ) {
+                $donHang = DonHang::with('chitiet_donhangs')
+                    ->where('madh', $orderId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$donHang) {
+                    throw new Exception('Order not found');
+                }
+
+                // Tránh xử lý trùng lặp nếu đơn đã thanh toán
+                if ($donHang->trangthai_thanhtoan === 'DA_THANH_TOAN') {
+                    return $maTraCuuQr ?? 'ALREADY_PAID';
+                }
+
+                // Kiểm tra số tiền thanh toán có đủ không
+                if ($soTien < (float) $donHang->tongtien) {
+                    GiaoDichQR::create([
+                        'ma_tra_cuu_qr' => $maTraCuuQr,
+                        'sotien'        => $soTien,
+                        'noi_dung_ck'   => $noiDung,
+                        'stk_ngan_hang' => $stk,
+                        'ten_ngan_hang' => $tenNganHang,
+                        'trang_thai_qr' => $callback->status,
+                        'madh'          => $donHang->madh,
+                    ]);
+
+                    throw new Exception('Payment amount is less than order total');
+                }
+
+                $donHang->update([
+                    'trangthai_donhang'   => 'DA_XAC_NHAN',
+                    'trangthai_thanhtoan' => 'DA_THANH_TOAN',
+                ]);
+
+                foreach ($donHang->chitiet_donhangs as $chiTiet) {
+                    $sanPham = SanPham::lockForUpdate()->find($chiTiet->masp);
+                    if ($sanPham) {
+                        $sanPham->soluong_tonkho = max(0, $sanPham->soluong_tonkho - $chiTiet->soluong_mua);
+                        $sanPham->save();
+                    }
+                }
+
+                GiaoDichQR::create([
+                    'ma_tra_cuu_qr' => $maTraCuuQr,
+                    'sotien'        => $soTien,
+                    'noi_dung_ck'   => $noiDung,
+                    'stk_ngan_hang' => $stk,
+                    'ten_ngan_hang' => $tenNganHang,
+                    'trang_thai_qr' => $callback->status,
+                    'madh'          => $donHang->madh,
+                ]);
+
+                return $callback->transactionid ?? $callback->referencenumber ?? 'GeneratedRefTransactionId';
+            });
+
+            $res = new SuccessResponse(false,null,'Transaction processed successfully',new TransactionResponseObject($refTransactionId));
+
+            return response()->json($res, 200);
+        } catch (Exception $e) {
+            Log::error('Lỗi xử lý transactionSync VietQR', [
+                'message' => $e->getMessage(),
+                'orderId' => $orderId,
+            ]);
+
+            return $this->respondWithError(
+                new ErrorResponse(true, 'TRANSACTION_FAILED', 'Transaction processing failed', null), 400);
+        }
+    }
+
+    private function validateToken(string $token, string $secretKey, string $algorithm): bool
+    {
+        try {
+            JWT::decode($token, new Key($secretKey, $algorithm));
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    private function respondWithError(ErrorResponse $errorResponse, int $statusCode = 400)
+    {
+        return response()->json($errorResponse, $statusCode);
     }
 }

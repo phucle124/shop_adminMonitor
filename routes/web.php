@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GiaoDichQRController;
 use App\Http\Controllers\KhachHangController;
 use App\Http\Controllers\SanPhamController;
+use App\Http\Controllers\VietQrAuthController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -41,13 +42,29 @@ Route::get('/khach-hang/xem-lai-don-hang', [KhachHangController::class, 'xemLaiD
 
 Route::post('/khach-hang/xac-nhan-don-hang',[KhachHangController::class, 'xacNhanDatHang'])->name('donhang.confirm');
 
-Route::post('/vqr/bank/api/test/transaction-callback', [GiaoDichQRController::class, 'handleVietQRWebhook']);
+// Route::post('/vqr/bank/api/test/transaction-callback', [GiaoDichQRController::class, 'handleVietQRWebhook']);
+
+Route::prefix('vqr')->group(function (){
+
+    Route::post('/api/token_generate', [VietQrAuthController::class, 'tokenGenerate'])->name('vqr.token.generate');
+
+    Route::post('/api/qr/generate-customer',[VietQrAuthController::class, 'getCustomerQr'])->name('vqr.customer.generate');
+
+    Route::post('/bank/api/transaction-sync', [GiaoDichQRController::class, 'transactionSync'])->name('vqr.transaction.sync');
+
+    // Route::post('/order/generate-qr', [GiaoDichQRController::class, 'createQrForOrder'])->name('vqr.order.generate_qr');
+
+    // Route::get('/order/{orderId}/status', [GiaoDichQRController::class, 'checkOrderStatus'])->name('vqr.order.status');
+});
+
 
 Route::get('/don-hang/check-status/{madh}', [GiaoDichQRController::class, 'checkPaymentStatus'])->name('donhang.check-status');
 
 Route::get('/don-hang/thanh-cong/{madh}', function ($madh) {
     return view('KhachHangView.PaymentSuccess', compact('madh'));
 })->name('donhang.thanhcong');
+
+
 
 //Quản trị viên đăng nhập
 // Route::get('login', [AuthController::class, 'showLogin_Admin']);
