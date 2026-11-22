@@ -18,8 +18,8 @@ class VietQrAuthController extends Controller
     public function getVietQrAccessToken(): string 
     {
         return Cache::remember('vietqr_access_token', now()->addMinutes(50), function () {
-            $username = config('services.vietqr.username') ?? env('VIETQR_AUTH_USERNAME') ?? 'customer-deviceshop-user26728';
-            $password = config('services.vietqr.password') ?? env('VIETQR_AUTH_PASSWORD') ?? 'Y3VzdG9tZXItZGV2aWNlc2hvcC11c2VyMjY3Mjg=';
+            $username = 'phuc95721';
+            $password = '0876358264';
 
             if (empty($username) || empty($password)) {
                 throw new Exception('Thiếu cấu hình VIETQR_AUTH_USERNAME hoặc VIETQR_AUTH_PASSWORD');
@@ -27,8 +27,9 @@ class VietQrAuthController extends Controller
 
             $response = Http::withBasicAuth($username, $password)
                 ->acceptJson()
+                ->asJson()
                 ->timeout(15)
-                ->post('https://api.vietqr.org/vqr/api/token_generate');
+                ->post('https://api.vietqr.org/vqr/api/token_generate',[]);
 
             if ($response->failed()) {
                 throw new Exception('Lấy token VietQR thất bại (HTTP ' . $response->status() . ')');
