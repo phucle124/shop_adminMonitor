@@ -61,7 +61,7 @@ class VietQrAuthController extends Controller
             'content'      => $request->input('content', 'Test Qr'),
             'qrType'       => (int) $request->input('qrType', 0),
             'orderId'      => $request->input('orderId', 'DHtest'),
-            'transType'    => $request->input('transType', 'D'),
+            'transType'    => $request->input('transType', 'C'),
             'urlLink'      => $request->input('urlLink', 'https://shop-adminmonitor.onrender.com/products'),
         ];
 
