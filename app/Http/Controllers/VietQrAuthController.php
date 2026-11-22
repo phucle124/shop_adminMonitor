@@ -115,7 +115,7 @@ class VietQrAuthController extends Controller
 
             return response()->json([
                 'error'        => true,
-                'message' => 'Không thể lấy token từ VietQR',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

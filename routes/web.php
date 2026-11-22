@@ -42,7 +42,6 @@ Route::get('/khach-hang/xem-lai-don-hang', [KhachHangController::class, 'xemLaiD
 
 Route::post('/khach-hang/xac-nhan-don-hang',[KhachHangController::class, 'xacNhanDatHang'])->name('donhang.confirm');
 
-// Route::post('/vqr/bank/api/test/transaction-callback', [GiaoDichQRController::class, 'handleVietQRWebhook']);
 
 Route::prefix('vqr')->group(function (){
 
