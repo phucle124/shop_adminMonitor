@@ -114,7 +114,8 @@ class GiaoDichQRController extends Controller
             );
         }
 
-        $token = substr($authHeader, strlen($bearerPrefix));
+        // $token = substr($authHeader, strlen($bearerPrefix));
+        $token = preg_match('/^Bearer\s+(.+)$/i', $authHeader, $m) ? trim($m[1]) : '';
         $jwtParts = explode('.', $token);
         $jwtHeader = null;
         $jwtPayload = null;
