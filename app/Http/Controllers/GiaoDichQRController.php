@@ -98,8 +98,8 @@ class GiaoDichQRController extends Controller
 
     public function transactionSync(Request $request)
     {
-        $secretKey = env('VIETQR_JWT_SECRET');
-        $algo = env('VIETQR_JWT_TYPE');
+        $secretKey = (string) env('VIETQR_JWT_SECRET') ?: 'cauchoquamon123';
+        $algo = (string) env('VIETQR_JWT_TYPE') ?: 'HS512';
 
         $authHeader = $request->header('Authorization') ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
         $bearerPrefix = 'Bearer ';
@@ -220,10 +220,10 @@ class GiaoDichQRController extends Controller
         }
     }
 
-    private function validateToken(string $token, string $secretKey, string $algorithm): bool
+    private function validateToken(string $token, string $secretKey, string $algo): bool
     {
         try {
-            JWT::decode($token, new Key($secretKey, $algorithm));
+            JWT::decode($token, new Key($secretKey, $algo));
             return true;
         } catch (Exception $e) {
             return false;
