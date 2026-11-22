@@ -101,7 +101,10 @@ class GiaoDichQRController extends Controller
         $secretKey = (string) env('VIETQR_JWT_SECRET') ?: 'cauchoquamon123';
         $algo = (string) env('VIETQR_JWT_TYPE') ?: 'HS512';
 
-        $authHeader = $request->header('Authorization') ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+        $authHeader = $request->header('Authorization') ?? $request->server('HTTP_AUTHORIZATION')
+                                                        ?? $request->server('REDIRECT_HTTP_AUTHORIZATION')
+                                                        ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '')
+                                                        ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
         $bearerPrefix = 'Bearer ';
 
         if (empty($authHeader) || !str_starts_with($authHeader, $bearerPrefix)) {
@@ -112,6 +115,22 @@ class GiaoDichQRController extends Controller
         }
 
         $token = substr($authHeader, strlen($bearerPrefix));
+        $jwtParts = explode('.', $token);
+        $jwtHeader = null;
+        $jwtPayload = null;
+
+        if (count($jwtParts) === 3) {
+            $jwtHeader = json_decode(base64_decode(strtr($jwtParts[0], '-_', '+/')), true);
+            $jwtPayload = json_decode(base64_decode(strtr($jwtParts[1], '-_', '+/')), true);
+        }
+
+        Log::info('[VQR][transactionSync] Auth debug', [
+            'has_auth_header' => $authHeader !== '',
+            'secret_used'     => $secretKey,
+            'algo_used'       => $algo,
+            'jwt_header'      => $jwtHeader,
+            'jwt_payload'     => $jwtPayload,
+        ]);
 
         if (!$this->validateToken($token, $secretKey, $algo)) {
             return $this->respondWithError(
