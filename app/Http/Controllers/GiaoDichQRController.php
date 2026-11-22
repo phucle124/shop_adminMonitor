@@ -125,14 +125,13 @@ class GiaoDichQRController extends Controller
             $jwtPayload = json_decode(base64_decode(strtr($jwtParts[1], '-_', '+/')), true);
         }
 
-        Log::info('[VQR][transactionSync] Auth debug', [
-            'has_auth_header' => $authHeader !== '',
-            'secret_used'     => $secretKey,
-            'algo_used'       => $algo,
-            'jwt_header'      => $jwtHeader,
-            'jwt_payload'     => $jwtPayload,
+        Log::info('[VQR][transactionSync] Raw auth check', [
+            'auth_header_length' => strlen($authHeader),
+            'auth_header_sample' => substr($authHeader, 0, 45),
+            'token_length'       => strlen($token),
+            'jwt_parts_count'    => count($jwtParts),
         ]);
-
+        
         if (!$this->validateToken($token, $secretKey, $algo)) {
             return $this->respondWithError(
                 new ErrorResponse(true, 'INVALID_TOKEN', 'Invalid or expired token', null),
