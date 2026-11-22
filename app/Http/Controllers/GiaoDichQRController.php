@@ -255,6 +255,12 @@ class GiaoDichQRController extends Controller
                 ->timeout(15)
                 ->post('https://dev.vietqr.org/vqr/bank/api/test/transaction-callback', $info);
 
+            Log::info('VietQR raw test-callback response', [
+                'http_status' => $response->status(),
+                'body'        => $response->body(),
+                'sent_info'   => $info,
+            ]);  
+
             $body   = $response->json() ?? [];
             $status = strtoupper((string) (
                 $body['status']
