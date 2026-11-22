@@ -50,7 +50,7 @@ class VietQrAuthController extends Controller
     //Tạo Mã QR bằng api của VietQR
     public function getCustomerQr(Request $request, VietQrAuthController $authController)
     {
-        $qrEndpoint = 'https://dev.vietqr.org/vqr/api/qr/generate-customer';
+        $qrEndpoint = 'https://api.vietqr.org/vqr/api/qr/generate-customer';
 
                         /***************************Ghi chú****************************/
         $info = [       //info : NganHanginfo + DonHanginfo + field bắt buộc và optional của vietqr
