@@ -29,7 +29,7 @@ class VietQrAuthController extends Controller
                 ->acceptJson()
                 ->asJson()
                 ->timeout(15)
-                ->post('https://api.vietqr.org/vqr/api/token_generate',[]);
+                ->post('https://dev.vietqr.org/vqr/api/token_generate',[]);
 
             if ($response->failed()) {
                 throw new Exception('Lấy token VietQR thất bại (HTTP ' . $response->status() . ')');
