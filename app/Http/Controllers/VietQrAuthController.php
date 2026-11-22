@@ -18,8 +18,8 @@ class VietQrAuthController extends Controller
     public function getVietQrAccessToken(): string 
     {
         return Cache::remember('vietqr_access_token', now()->addMinutes(50), function () {
-            $username = 'phuc95721';
-            $password = '0876358264';
+            $username = 'customer-deviceshop-user26728';
+            $password = 'Y3VzdG9tZXItZGV2aWNlc2hvcC11c2VyMjY3Mjg=';
 
             if (empty($username) || empty($password)) {
                 throw new Exception('Thiếu cấu hình VIETQR_AUTH_USERNAME hoặc VIETQR_AUTH_PASSWORD');
