@@ -104,12 +104,10 @@ class VietQrAuthController extends Controller
             $token = $this->getVietQrAccessToken();
 
             return response()->json([
-                'error'        => false,
-                'message' => 'Lấy token thành công',
-                'object'       => [
                     'access_token' => $token,
-                    'token_type'   => 'Bearer',
-                ],
+                    'token_type' => 'Bearer',
+                    'expires_in' => 300,
+
             ], 200);
         } catch (Exception $e) {
             Log::error('Lỗi lấy token từ VietQR: ' . $e->getMessage());
