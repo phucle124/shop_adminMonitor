@@ -97,9 +97,9 @@ class GiaoDichQRController extends Controller
 
 
     public function transactionSync(Request $request){
-        
+
         $secretKey = (string) (env('VIETQR_JWT_SECRET') ?: 'cauchoquamon123');
-        $algo      = (string) (env('VIETQR_JWT_TYPE') ?: 'HS256');
+        $algo      = (string) (env('VIETQR_JWT_TYPE') ?: 'HS512');
         $bypassVerify = filter_var(env('VIETQR_BYPASS_TOKEN_VERIFY', false), FILTER_VALIDATE_BOOLEAN);
 
         $authHeader = (string) (
