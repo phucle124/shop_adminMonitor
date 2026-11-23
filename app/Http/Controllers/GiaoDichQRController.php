@@ -146,11 +146,11 @@ class GiaoDichQRController extends Controller
 
         $callback = new TransactionCallback($data);
 
-        $orderId    = $callback->orderId;
+        $orderId    = $callback->orderId ?: 'DHtest';
         $soTien     = (float) ($callback->amount ?? 0);
         $noiDung    = (string) ($callback->content ?? '');
         $stk        = (string) ($callback->bankaccount ?? '');
-        $tenNganHang= (string) ($callback->serviceCode ?? '');
+        $maNganHang= (string) ($callback->serviceCode ?? '');
         $maTraCuuQr = $callback->transactionid ?? $callback->referencenumber ?? null;
 
         if (empty($orderId) || $soTien <= 0) {
@@ -167,7 +167,7 @@ class GiaoDichQRController extends Controller
                 $soTien,
                 $noiDung,
                 $stk,
-                $tenNganHang,
+                $maNganHang,
                 $maTraCuuQr
             ) {
                 $donHang = DonHang::with('chitiet_donhangs')
@@ -189,7 +189,7 @@ class GiaoDichQRController extends Controller
                         'sotien'        => $soTien,
                         'noi_dung_ck'   => $noiDung,
                         'stk_ngan_hang' => $stk,
-                        'ma_ngan_hang'  => $tenNganHang,
+                        'ma_ngan_hang'  => $maNganHang,
                         'trang_thai_qr' => $callback->status,
                         'madh'          => $donHang->madh,
                     ]);
@@ -215,7 +215,7 @@ class GiaoDichQRController extends Controller
                     'sotien'        => $soTien,
                     'noi_dung_ck'   => $noiDung,
                     'stk_ngan_hang' => $stk,
-                    'ma_ngan_hang'  => $tenNganHang,
+                    'ma_ngan_hang'  => $maNganHang,
                     'trang_thai_qr' => $callback->status,
                     'madh'          => $donHang->madh,
                 ]);
