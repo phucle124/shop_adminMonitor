@@ -96,51 +96,39 @@ class GiaoDichQRController extends Controller
 
 
 
-    public function transactionSync(Request $request)
-    {
-        $secretKey = (string) env('VIETQR_JWT_SECRET') ?: 'cauchoquamon123';
-        $algo = (string) env('VIETQR_JWT_TYPE') ?: 'HS256';
+    public function transactionSync(Request $request){
+        
+        $secretKey = (string) (env('VIETQR_JWT_SECRET') ?: 'cauchoquamon123');
+        $algo      = (string) (env('VIETQR_JWT_TYPE') ?: 'HS256');
+        $bypassVerify = filter_var(env('VIETQR_BYPASS_TOKEN_VERIFY', false), FILTER_VALIDATE_BOOLEAN);
 
-        $authHeader = $request->header('Authorization') ?? $request->server('HTTP_AUTHORIZATION')
-                                                        ?? $request->server('REDIRECT_HTTP_AUTHORIZATION')
-                                                        ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '')
-                                                        ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
-        $bearerPrefix = 'Bearer ';
+        $authHeader = (string) (
+            $request->header('Authorization')
+            ?? $request->server('HTTP_AUTHORIZATION')
+            ?? $request->server('REDIRECT_HTTP_AUTHORIZATION')
+            ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '')
+            ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '')
+        );
 
-        if (empty($authHeader) || !str_starts_with($authHeader, $bearerPrefix)) {
-            return $this->respondWithError(
-                new ErrorResponse(true, 'INVALID_AUTH_HEADER', 'Authorization header is missing or invalid', null),
-                401
-            );
-        }
-
-        // $token = substr($authHeader, strlen($bearerPrefix));
         $token = preg_match('/^Bearer\s+(.+)$/i', $authHeader, $m) ? trim($m[1]) : '';
-        $jwtParts = explode('.', $token);
-        $jwtHeader = null;
-        $jwtPayload = null;
-
-        if (count($jwtParts) === 3) {
-            $jwtHeader = json_decode(base64_decode(strtr($jwtParts[0], '-_', '+/')), true);
-            $jwtPayload = json_decode(base64_decode(strtr($jwtParts[1], '-_', '+/')), true);
-        }
-
-        // Log::info('[VQR][transactionSync] Auth debug', [
-        //     'has_auth_header' => $authHeader !== '',
-        //     'secret_used'     => $secretKey,
-        //     'algo_used'       => $algo,
-        //     'jwt_header'      => $jwtHeader,
-        //     'jwt_payload'     => $jwtPayload,
-        // ]);
+        $jwtParts = $token !== '' ? explode('.', $token) : [];
 
         Log::info('[VQR][transactionSync] Raw auth check', [
             'auth_header_length' => strlen($authHeader),
             'auth_header_sample' => substr($authHeader, 0, 45),
             'token_length'       => strlen($token),
             'jwt_parts_count'    => count($jwtParts),
+            'bypass_verify'      => $bypassVerify,
         ]);
 
-        if (!$this->validateToken($token, $secretKey, $algo)) {
+        if ($token === '' || !preg_match('/^Bearer\s+.+$/i', $authHeader)) {
+            return $this->respondWithError(
+                new ErrorResponse(true, 'INVALID_AUTH_HEADER', 'Authorization header is missing or invalid', null),
+                401
+            );
+        }
+
+        if (!$bypassVerify && !$this->validateToken($token, $secretKey, $algo)) {
             return $this->respondWithError(
                 new ErrorResponse(true, 'INVALID_TOKEN', 'Invalid or expired token', null),
                 401
@@ -152,13 +140,17 @@ class GiaoDichQRController extends Controller
             $data = $request->all();
         }
 
+        Log::info('[VQR][transactionSync] Incoming payload', [
+            'payload' => $data,
+        ]);
+
         $callback = new TransactionCallback($data);
 
         $orderId    = $callback->orderId;
-        $soTien     = $callback->amount;
-        $noiDung    = $callback->content ?? '';
-        $stk        = $callback->bankaccount ?? '';
-        $tenNganHang= $callback->serviceCode ?? '';
+        $soTien     = (float) ($callback->amount ?? 0);
+        $noiDung    = (string) ($callback->content ?? '');
+        $stk        = (string) ($callback->bankaccount ?? '');
+        $tenNganHang= (string) ($callback->serviceCode ?? '');
         $maTraCuuQr = $callback->transactionid ?? $callback->referencenumber ?? null;
 
         if (empty($orderId) || $soTien <= 0) {
@@ -184,27 +176,25 @@ class GiaoDichQRController extends Controller
                     ->first();
 
                 if (!$donHang) {
-                    throw new Exception('Order not found');
+                    throw new \Exception('Order not found');
                 }
 
-                // Tránh xử lý trùng lặp nếu đơn đã thanh toán
                 if ($donHang->trangthai_thanhtoan === 'DA_THANH_TOAN') {
                     return $maTraCuuQr ?? 'ALREADY_PAID';
                 }
 
-                // Kiểm tra số tiền thanh toán có đủ không
                 if ($soTien < $donHang->tongtien) {
                     GiaoDichQR::create([
-                        'ma_tra_cuu_qr' => $maTraCuuQr, //qrCode
-                        'sotien'        => $soTien,     //amount
-                        'noi_dung_ck'   => $noiDung,    //content
-                        'stk_ngan_hang' => $stk,        //bankAccount
-                        'ma_ngan_hang' => $tenNganHang,    
+                        'ma_tra_cuu_qr' => $maTraCuuQr,
+                        'sotien'        => $soTien,
+                        'noi_dung_ck'   => $noiDung,
+                        'stk_ngan_hang' => $stk,
+                        'ma_ngan_hang'  => $tenNganHang,
                         'trang_thai_qr' => $callback->status,
                         'madh'          => $donHang->madh,
                     ]);
 
-                    throw new Exception('Payment amount is less than order total');
+                    throw new \Exception('Payment amount is less than order total');
                 }
 
                 $donHang->update([
@@ -225,7 +215,7 @@ class GiaoDichQRController extends Controller
                     'sotien'        => $soTien,
                     'noi_dung_ck'   => $noiDung,
                     'stk_ngan_hang' => $stk,
-                    'ma_ngan_hang' => $tenNganHang,
+                    'ma_ngan_hang'  => $tenNganHang,
                     'trang_thai_qr' => $callback->status,
                     'madh'          => $donHang->madh,
                 ]);
@@ -233,29 +223,43 @@ class GiaoDichQRController extends Controller
                 return $callback->transactionid ?? $callback->referencenumber ?? 'GeneratedRefTransactionId';
             });
 
-            $res = new SuccessResponse(false,null,'Transaction processed successfully',new TransactionResponseObject($refTransactionId));
+            $res = new SuccessResponse(
+                false,
+                null,
+                'Transaction processed successfully',
+                new TransactionResponseObject($refTransactionId)
+            );
 
             return response()->json($res, 200);
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Lỗi xử lý transactionSync VietQR', [
                 'message' => $e->getMessage(),
                 'orderId' => $orderId,
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
             ]);
 
             return $this->respondWithError(
-                new ErrorResponse(true, 'TRANSACTION_FAILED', 'Transaction processing failed', null), 400);
+                new ErrorResponse(true, 'TRANSACTION_FAILED', 'Transaction processing failed', null),
+                400
+            );
         }
     }
 
-    private function validateToken(string $token, string $secretKey, string $algo): bool
-    {
+    private function validateToken(string $token, string $secretKey, string $algo): bool{
         try {
             JWT::decode($token, new Key($secretKey, $algo));
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            Log::warning('[VQR][validateToken] Failed', [
+                'message' => $e->getMessage(),
+                'algo'    => $algo,
+            ]);
             return false;
         }
     }
+
+    
 
     private function respondWithError(ErrorResponse $errorResponse, int $statusCode = 400)
     {
