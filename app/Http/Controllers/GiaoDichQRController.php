@@ -93,9 +93,6 @@ class TransactionResponseObject{
 /*Chiều từ VietQR đổ về*/
 class GiaoDichQRController extends Controller
 {
-
-
-
     public function transactionSync(Request $request){
 
         $secretKey = (string) (env('VIETQR_JWT_SECRET') ?: 'cauchoquamon123');
@@ -146,7 +143,7 @@ class GiaoDichQRController extends Controller
 
         $callback = new TransactionCallback($data);
 
-        $orderId    = $callback->orderId ?: 'DHtest';
+        $orderId    = $callback->orderId;
         $soTien     = (float) ($callback->amount ?? 0);
         $noiDung    = (string) ($callback->content ?? '');
         $stk        = (string) ($callback->bankaccount ?? '');
@@ -161,15 +158,30 @@ class GiaoDichQRController extends Controller
         }
 
         try {
-            $refTransactionId = DB::transaction(function () use (
-                $callback,
-                $orderId,
-                $soTien,
-                $noiDung,
-                $stk,
-                $maNganHang,
-                $maTraCuuQr
-            ) {
+            $refTransactionId = DB::transaction(function () use ($callback) {
+
+                // Setup theo kiểu dữ liệu đặc tả API VietQR yêu cầu
+
+                $rawOrderId      = trim((string) ($callback->orderId ?? ''));
+                $orderId         = $rawOrderId !== '' ? (int) $rawOrderId : 1; // Tạm fallback '1' khi test; bỏ khi chạy thật
+                $amount          = (int) ($callback->amount ?? 0); // Long -> int
+                $transType       = strtoupper(trim((string) ($callback->transType ?? ''))); // String
+                $content         = (string) ($callback->content ?? ''); // String
+                $bankAccount     = trim((string) ($callback->bankaccount ?? '')); // String
+                $transactionId   = trim((string) ($callback->transactionid ?? '')); // String
+                $referenceNumber = trim((string) ($callback->referencenumber ?? '')); // String
+                $transactionTime = (int) ($callback->transactiontime ?? 0); // Long -> int
+                $maNganHang      = trim((string) ($callback->serviceCode ?? ''));
+                $trangThaiQr     = (string) ($callback->status ?? 'SUCCESS');
+                $maTraCuuQr      = $transactionId !== ''
+                    ? $transactionId
+                    : ($referenceNumber !== '' ? $referenceNumber : null);
+
+                if ($orderId <= 0 || $amount <= 0) {
+                    throw new \Exception('Missing or invalid orderId/amount');
+                }
+
+                
                 $donHang = DonHang::with('chitiet_donhangs')
                     ->where('madh', $orderId)
                     ->lockForUpdate()
@@ -179,62 +191,73 @@ class GiaoDichQRController extends Controller
                     throw new \Exception('Order not found');
                 }
 
-                if ($donHang->trangthai_thanhtoan === 'DA_THANH_TOAN') {
-                    return $maTraCuuQr ?? 'ALREADY_PAID';
+                $trangThaiThanhToan = (string) $donHang->trangthai_thanhtoan;
+                if ($trangThaiThanhToan === 'DA_THANH_TOAN') {
+                    return $maTraCuuQr ?? 'DA_THANH_TOAN';
                 }
 
-                if ($soTien < $donHang->tongtien) {
+                // 3. So sánh với tongtien (double -> float)
+                $tongTienDonHang = (float) $donHang->tongtien;
+                if ((float) $amount < $tongTienDonHang) {
                     GiaoDichQR::create([
                         'ma_tra_cuu_qr' => $maTraCuuQr,
-                        'sotien'        => $soTien,
-                        'noi_dung_ck'   => $noiDung,
-                        'stk_ngan_hang' => $stk,
+                        'sotien'        => (float) $amount,
+                        'noi_dung_ck'   => $content,
+                        'stk_ngan_hang' => $bankAccount,
                         'ma_ngan_hang'  => $maNganHang,
-                        'trang_thai_qr' => $callback->status,
-                        'madh'          => $donHang->madh,
+                        'trang_thai_qr' => $trangThaiQr,
+                        'madh'          => (int) $donHang->madh,
                     ]);
 
-                    throw new \Exception('Payment amount is less than order total');
+                    throw new \Exception('số tiền chi trả thực tế nhỏ hơn tổng tiền yêu cầu');
                 }
 
+                // 4. Cập nhật trạng thái đơn hàng theo đúng ENUM của bảng donhang
                 $donHang->update([
                     'trangthai_donhang'   => 'DA_XAC_NHAN',
                     'trangthai_thanhtoan' => 'DA_THANH_TOAN',
                 ]);
 
+
+
+                //Trừ tồn kho theo chitiet_donhang (dựa vào 2 cột masp và soluong_mua)
+
                 foreach ($donHang->chitiet_donhangs as $chiTiet) {
-                    $sanPham = SanPham::lockForUpdate()->find($chiTiet->masp);
+
+                    $maSp        = (int) $chiTiet->masp;
+                    $sanPham = SanPham::lockForUpdate()->find($maSp);
                     if ($sanPham) {
                         $sanPham->soluong_tonkho = max(0, $sanPham->soluong_tonkho - $chiTiet->soluong_mua);
                         $sanPham->save();
                     }
                 }
 
+                // Ghi lịch sử giao dịch QR
                 GiaoDichQR::create([
                     'ma_tra_cuu_qr' => $maTraCuuQr,
-                    'sotien'        => $soTien,
-                    'noi_dung_ck'   => $noiDung,
-                    'stk_ngan_hang' => $stk,
+                    'sotien'        => (float) $amount,
+                    'noi_dung_ck'   => $content,
+                    'stk_ngan_hang' => $bankAccount,
                     'ma_ngan_hang'  => $maNganHang,
-                    'trang_thai_qr' => $callback->status,
-                    'madh'          => $donHang->madh,
+                    'trang_thai_qr' => $trangThaiQr,
+                    'madh'          => (int) $donHang->madh,
                 ]);
 
-                return $callback->transactionid ?? $callback->referencenumber ?? 'GeneratedRefTransactionId';
+                return $maTraCuuQr ?? 'GeneratedRefTransactionId';
             });
 
             $res = new SuccessResponse(
                 false,
                 null,
                 'Transaction processed successfully',
-                new TransactionResponseObject($refTransactionId)
+                new TransactionResponseObject((string) $refTransactionId)
             );
 
             return response()->json($res, 200);
         } catch (\Throwable $e) {
             Log::error('Lỗi xử lý transactionSync VietQR', [
                 'message' => $e->getMessage(),
-                'orderId' => $orderId,
+                'orderId' => (string) ($callback->orderId ?? ''),
                 'file'    => $e->getFile(),
                 'line'    => $e->getLine(),
             ]);

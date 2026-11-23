@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sanpham', function (Blueprint $table) {
-            $table->id('masp');
+            $table->id('masp')->autoIncrement();
             $table->string('tensp',100);
             $table->enum('loaisp',['NORMAL','SPECIAL','AI']);
             $table->string('hinh',150);
