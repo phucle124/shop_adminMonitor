@@ -99,7 +99,7 @@ class GiaoDichQRController extends Controller
     public function transactionSync(Request $request)
     {
         $secretKey = (string) env('VIETQR_JWT_SECRET') ?: 'cauchoquamon123';
-        $algo = (string) env('VIETQR_JWT_TYPE') ?: 'HS512';
+        $algo = (string) env('VIETQR_JWT_TYPE') ?: 'HS256';
 
         $authHeader = $request->header('Authorization') ?? $request->server('HTTP_AUTHORIZATION')
                                                         ?? $request->server('REDIRECT_HTTP_AUTHORIZATION')
