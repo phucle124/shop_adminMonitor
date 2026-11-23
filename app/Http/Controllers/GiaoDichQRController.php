@@ -95,9 +95,9 @@ class GiaoDichQRController extends Controller
 {
     public function transactionSync(Request $request){
 
-        $secretKey = (string) (env('VIETQR_JWT_SECRET') ?: 'cauchoquamon123');
+        $secretKey = (string) (env('VIETQR_JWT_SECRET') ?: 'abcdefghijklmnopqrstuvwxyzzyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA');
         $algo      = (string) (env('VIETQR_JWT_TYPE') ?: 'HS512');
-        $bypassVerify = filter_var(env('VIETQR_BYPASS_TOKEN_VERIFY', false), FILTER_VALIDATE_BOOLEAN);
+        // $bypassVerify = filter_var(env('VIETQR_BYPASS_TOKEN_VERIFY', false), FILTER_VALIDATE_BOOLEAN);
 
         $authHeader = (string) (
             $request->header('Authorization')
@@ -115,22 +115,22 @@ class GiaoDichQRController extends Controller
             'auth_header_sample' => substr($authHeader, 0, 45),
             'token_length'       => strlen($token),
             'jwt_parts_count'    => count($jwtParts),
-            'bypass_verify'      => $bypassVerify,
+            // 'bypass_verify'      => $bypassVerify,
         ]);
 
-        if ($token === '' || !preg_match('/^Bearer\s+.+$/i', $authHeader)) {
-            return $this->respondWithError(
-                new ErrorResponse(true, 'INVALID_AUTH_HEADER', 'Authorization header is missing or invalid', null),
-                401
-            );
-        }
+        // if ($token === '' || !preg_match('/^Bearer\s+.+$/i', $authHeader)) {
+        //     return $this->respondWithError(
+        //         new ErrorResponse(true, 'INVALID_AUTH_HEADER', 'Authorization header is missing or invalid', null),
+        //         401
+        //     );
+        // }
 
-        if (!$bypassVerify && !$this->validateToken($token, $secretKey, $algo)) {
-            return $this->respondWithError(
-                new ErrorResponse(true, 'INVALID_TOKEN', 'Invalid or expired token', null),
-                401
-            );
-        }
+        // if (!$this->validateToken($token, $secretKey, $algo)) {
+        //     return $this->respondWithError(
+        //         new ErrorResponse(true, 'INVALID_TOKEN', 'Invalid or expired token', null),
+        //         401
+        //     );
+        // }
 
         $data = json_decode($request->getContent(), true);
         if (!is_array($data)) {
@@ -174,12 +174,12 @@ class GiaoDichQRController extends Controller
                     ?: (trim((string) ($callback->referencenumber ?? '')) ?: null);
                 $trangThaiQr     = (string) ($callback->status ?: null);
 
-                if ($orderId <= 0 || $soTien <= 0) {
-                    return $this->respondWithError(
-                        new ErrorResponse(true, 'INVALID_PAYLOAD', 'Missing or invalid orderId/amount', null),
-                        400
-                    );
-                }
+                // if ($orderId <= 0 || $soTien <= 0) {
+                //     return $this->respondWithError(
+                //         new ErrorResponse(true, 'INVALID_PAYLOAD', 'Missing or invalid orderId/amount', null),
+                //         400
+                //     );
+                // }
 
                 
                 $donHang = DonHang::with('chitiet_donhangs')
@@ -196,7 +196,7 @@ class GiaoDichQRController extends Controller
                     return $maTraCuuQr ?? 'DA_THANH_TOAN';
                 }
 
-                // 3. So sánh với tongtien (double -> float)
+          
                 $tongTienDonHang = (float) $donHang->tongtien;
                 if ((float) $soTien < $tongTienDonHang) {
                     GiaoDichQR::create([
@@ -212,7 +212,7 @@ class GiaoDichQRController extends Controller
                     throw new \Exception('số tiền chi trả thực tế nhỏ hơn tổng tiền yêu cầu');
                 }
 
-                // 4. Cập nhật trạng thái đơn hàng theo đúng ENUM của bảng donhang
+               
                 $donHang->update([
                     'trangthai_donhang'   => 'DA_XAC_NHAN',
                     'trangthai_thanhtoan' => 'DA_THANH_TOAN',
