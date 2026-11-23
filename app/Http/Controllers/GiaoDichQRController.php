@@ -162,23 +162,23 @@ class GiaoDichQRController extends Controller
 
                 // Setup theo kiểu dữ liệu đặc tả API VietQR yêu cầu
 
-                $rawOrderId      = trim((string) ($callback->orderId ?? ''));
-                $orderId         = $rawOrderId !== '' ? (int) $rawOrderId : 2; // Tạm fallback '1' khi test; bỏ khi chạy thật
-                $amount          = (int) ($callback->amount ?? 0); // Long -> int
-                $transType       = strtoupper(trim((string) ($callback->transType ?? ''))); // String
-                $content         = (string) ($callback->content ?? ''); // String
-                $bankAccount     = trim((string) ($callback->bankaccount ?? '')); // String
-                $transactionId   = trim((string) ($callback->transactionid ?? '')); // String
-                $referenceNumber = trim((string) ($callback->referencenumber ?? '')); // String
-                $transactionTime = (int) ($callback->transactiontime ?? 0); // Long -> int
-                $maNganHang      = trim((string) ($callback->serviceCode ?? ''));
-                $trangThaiQr     = (string) ($callback->status ?? 'SUCCESS');
-                $maTraCuuQr      = $transactionId !== ''
-                    ? $transactionId
-                    : ($referenceNumber !== '' ? $referenceNumber : null);
+                $rawOrderId = trim((string) ($callback->orderId ?? ''));
+                // Tạm dùng '2' khi test nếu orderId rỗng; nhớ đổi đúng madh trong DB hoặc bỏ khi chạy thật
+                $orderId = $rawOrderId !== '' ? (int) $rawOrderId : 2;
 
-                if ($orderId <= 0 || $amount <= 0) {
-                    throw new \Exception('Missing or invalid orderId/amount');
+                $soTien     = (int) ($callback->amount ?? 0);
+                $noiDung    = (string) ($callback->content ?? '');
+                $stk        = trim((string) ($callback->bankaccount ?? ''));
+                $maNganHang = trim((string) ($callback->serviceCode ?? ''));
+                $maTraCuuQr = trim((string) ($callback->transactionid ?? ''))
+                    ?: (trim((string) ($callback->referencenumber ?? '')) ?: null);
+                $trangThaiQr     = (string) ($callback->status ?: null);
+
+                if ($orderId <= 0 || $soTien <= 0) {
+                    return $this->respondWithError(
+                        new ErrorResponse(true, 'INVALID_PAYLOAD', 'Missing or invalid orderId/amount', null),
+                        400
+                    );
                 }
 
                 
@@ -198,12 +198,12 @@ class GiaoDichQRController extends Controller
 
                 // 3. So sánh với tongtien (double -> float)
                 $tongTienDonHang = (float) $donHang->tongtien;
-                if ((float) $amount < $tongTienDonHang) {
+                if ((float) $soTien < $tongTienDonHang) {
                     GiaoDichQR::create([
                         'ma_tra_cuu_qr' => $maTraCuuQr,
-                        'sotien'        => (float) $amount,
-                        'noi_dung_ck'   => $content,
-                        'stk_ngan_hang' => $bankAccount,
+                        'sotien'        => (float) $soTien,
+                        'noi_dung_ck'   => $noiDung,
+                        'stk_ngan_hang' => $stk,
                         'ma_ngan_hang'  => $maNganHang,
                         'trang_thai_qr' => $trangThaiQr,
                         'madh'          => (int) $donHang->madh,
@@ -235,9 +235,9 @@ class GiaoDichQRController extends Controller
                 // Ghi lịch sử giao dịch QR
                 GiaoDichQR::create([
                     'ma_tra_cuu_qr' => $maTraCuuQr,
-                    'sotien'        => (float) $amount,
-                    'noi_dung_ck'   => $content,
-                    'stk_ngan_hang' => $bankAccount,
+                    'sotien'        => (float) $soTien,
+                    'noi_dung_ck'   => $noiDung,
+                    'stk_ngan_hang' => $stk,
                     'ma_ngan_hang'  => $maNganHang,
                     'trang_thai_qr' => $trangThaiQr,
                     'madh'          => (int) $donHang->madh,
