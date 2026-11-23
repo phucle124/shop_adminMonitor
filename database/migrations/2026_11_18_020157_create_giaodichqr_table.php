@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('giaodichqr', function (Blueprint $table) {
-            $table->id('ma_giao_dich');
+            $table->id('ma_giao_dich')->autoIncrement();
             $table->string('ma_tra_cuu_qr')->nullable(); //qrCode
             $table->decimal('sotien',15,2);           //amount
             $table->string('qr_url_pic')->nullable();

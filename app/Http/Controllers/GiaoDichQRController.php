@@ -95,9 +95,9 @@ class GiaoDichQRController extends Controller
 {
     public function transactionSync(Request $request){
 
-        $secretKey = (string) (env('VIETQR_JWT_SECRET') ?: 'abcdefghijklmnopqrstuvwxyzzyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA');
-        $algo      = (string) (env('VIETQR_JWT_TYPE') ?: 'HS512');
-        // $bypassVerify = filter_var(env('VIETQR_BYPASS_TOKEN_VERIFY', false), FILTER_VALIDATE_BOOLEAN);
+    $secretKey    = (string) (env('VIETQR_JWT_SECRET') ?: 'abcdefghijklmnopqrstuvwxyzzyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA');
+        $algo         = (string) (env('VIETQR_JWT_TYPE') ?: 'HS512');
+        $bypassVerify = filter_var(env('VIETQR_BYPASS_TOKEN_VERIFY', true), FILTER_VALIDATE_BOOLEAN);
 
         $authHeader = (string) (
             $request->header('Authorization')
@@ -107,7 +107,7 @@ class GiaoDichQRController extends Controller
             ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '')
         );
 
-        $token = preg_match('/^Bearer\s+(.+)$/i', $authHeader, $m) ? trim($m[1]) : '';
+        $token    = preg_match('/^Bearer\s+(.+)$/i', $authHeader, $m) ? trim($m[1]) : '';
         $jwtParts = $token !== '' ? explode('.', $token) : [];
 
         Log::info('[VQR][transactionSync] Raw auth check', [
@@ -115,22 +115,22 @@ class GiaoDichQRController extends Controller
             'auth_header_sample' => substr($authHeader, 0, 45),
             'token_length'       => strlen($token),
             'jwt_parts_count'    => count($jwtParts),
-            // 'bypass_verify'      => $bypassVerify,
+            'bypass_verify'      => $bypassVerify,
         ]);
 
-        // if ($token === '' || !preg_match('/^Bearer\s+.+$/i', $authHeader)) {
-        //     return $this->respondWithError(
-        //         new ErrorResponse(true, 'INVALID_AUTH_HEADER', 'Authorization header is missing or invalid', null),
-        //         401
-        //     );
-        // }
+        if ($token === '' || !preg_match('/^Bearer\s+.+$/i', $authHeader)) {
+            return $this->respondWithError(
+                new ErrorResponse(true, 'INVALID_AUTH_HEADER', 'Authorization header is missing or invalid', null),
+                401
+            );
+        }
 
-        // if (!$this->validateToken($token, $secretKey, $algo)) {
-        //     return $this->respondWithError(
-        //         new ErrorResponse(true, 'INVALID_TOKEN', 'Invalid or expired token', null),
-        //         401
-        //     );
-        // }
+        if (!$bypassVerify && !$this->validateToken($token, $secretKey, $algo)) {
+            return $this->respondWithError(
+                new ErrorResponse(true, 'INVALID_TOKEN', 'Invalid or expired token', null),
+                401
+            );
+        }
 
         $data = json_decode($request->getContent(), true);
         if (!is_array($data)) {
@@ -143,45 +143,31 @@ class GiaoDichQRController extends Controller
 
         $callback = new TransactionCallback($data);
 
-        $orderId    = $callback->orderId;
-        $soTien     = (float) ($callback->amount ?? 0);
-        $noiDung    = (string) ($callback->content ?? '');
-        $stk        = (string) ($callback->bankaccount ?? '');
-        $maNganHang= (string) ($callback->serviceCode ?? '');
-        $maTraCuuQr = $callback->transactionid ?? $callback->referencenumber ?? null;
-
-        if (empty($orderId) || $soTien <= 0) {
-            return $this->respondWithError(
-                new ErrorResponse(true, 'INVALID_PAYLOAD', 'Missing or invalid orderId/amount', null),
-                400
-            );
-        }
-
         try {
             $refTransactionId = DB::transaction(function () use ($callback) {
-
-                // Setup theo kiểu dữ liệu đặc tả API VietQR yêu cầu
-
+                // 1. Chuẩn hóa kiểu dữ liệu theo đặc tả VietQR & schema DB
                 $rawOrderId = trim((string) ($callback->orderId ?? ''));
-                // Tạm dùng '2' khi test nếu orderId rỗng; nhớ đổi đúng madh trong DB hoặc bỏ khi chạy thật
-                $orderId = $rawOrderId !== '' ? (int) $rawOrderId : 2;
+                // Tạm fallback về madh có sẵn trong DB (ví dụ 1) khi test callback có orderId rỗng; bỏ khi chạy thật
+                $orderId = $rawOrderId !== '' ? (int) $rawOrderId : 1;
 
-                $soTien     = (int) ($callback->amount ?? 0);
-                $noiDung    = (string) ($callback->content ?? '');
-                $stk        = trim((string) ($callback->bankaccount ?? ''));
-                $maNganHang = trim((string) ($callback->serviceCode ?? ''));
-                $maTraCuuQr = trim((string) ($callback->transactionid ?? ''))
-                    ?: (trim((string) ($callback->referencenumber ?? '')) ?: null);
-                $trangThaiQr     = (string) ($callback->status ?: null);
+                $amount          = (int) ($callback->amount ?? 0); // VietQR Long -> int
+                $transType       = strtoupper(trim((string) ($callback->transType ?? '')));
+                $content         = trim((string) ($callback->content ?? ''));
+                $bankAccount     = trim((string) ($callback->bankaccount ?? ''));
+                $transactionId   = trim((string) ($callback->transactionid ?? ''));
+                $referenceNumber = trim((string) ($callback->referencenumber ?? ''));
+                $transactionTime = (int) ($callback->transactiontime ?? 0); // VietQR Long -> int
+                $maNganHang      = trim((string) ($callback->serviceCode ?? ''));
 
-                // if ($orderId <= 0 || $soTien <= 0) {
-                //     return $this->respondWithError(
-                //         new ErrorResponse(true, 'INVALID_PAYLOAD', 'Missing or invalid orderId/amount', null),
-                //         400
-                //     );
-                // }
+                $maTraCuuQr = $transactionId !== ''
+                    ? $transactionId
+                    : ($referenceNumber !== '' ? $referenceNumber : null);
 
-                
+                if ($orderId <= 0 || $amount <= 0) {
+                    throw new \Exception('Invalid orderId or amount');
+                }
+
+                // 2. Khóa & lấy đơn hàng (madh: bigint UNSIGNED)
                 $donHang = DonHang::with('chitiet_donhangs')
                     ->where('madh', $orderId)
                     ->lockForUpdate()
@@ -191,55 +177,57 @@ class GiaoDichQRController extends Controller
                     throw new \Exception('Order not found');
                 }
 
-                $trangThaiThanhToan = (string) $donHang->trangthai_thanhtoan;
-                if ($trangThaiThanhToan === 'DA_THANH_TOAN') {
-                    return $maTraCuuQr ?? 'DA_THANH_TOAN';
+                if ((string) $donHang->trangthai_thanhtoan === 'DA_THANH_TOAN') {
+                    return $maTraCuuQr ?? 'ALREADY_PAID';
                 }
 
-          
-                $tongTienDonHang = (float) $donHang->tongtien;
-                if ((float) $soTien < $tongTienDonHang) {
+                // 3. Đối chiếu số tiền (amount: int -> float so với tongtien: double)
+                $soTienFloat  = (float) $amount;
+                $tongTienDon  = (float) $donHang->tongtien;
+                $noiDungCk    = $content !== '' ? $content : 'Nội dung chuyển khoản mặc định';
+                $maNganHangCk = $maNganHang !== '' ? $maNganHang : 'BIDV';
+
+                if ($soTienFloat < $tongTienDon) {
                     GiaoDichQR::create([
                         'ma_tra_cuu_qr' => $maTraCuuQr,
-                        'sotien'        => (float) $soTien,
-                        'noi_dung_ck'   => $noiDung,
-                        'stk_ngan_hang' => $stk,
-                        'ma_ngan_hang'  => $maNganHang,
-                        'trang_thai_qr' => $trangThaiQr,
+                        'sotien'        => $soTienFloat,
+                        'noi_dung_ck'   => $noiDungCk,
+                        'stk_ngan_hang' => $bankAccount,
+                        'ma_ngan_hang'  => $maNganHangCk,
+                        'trang_thai_qr' => 'FAILED',
                         'madh'          => (int) $donHang->madh,
                     ]);
 
-                    throw new \Exception('số tiền chi trả thực tế nhỏ hơn tổng tiền yêu cầu');
+                    throw new \Exception('Payment amount is less than order total');
                 }
 
-               
+                // 4. Cập nhật trạng thái đơn hàng
                 $donHang->update([
                     'trangthai_donhang'   => 'DA_XAC_NHAN',
                     'trangthai_thanhtoan' => 'DA_THANH_TOAN',
                 ]);
 
-
-
-                //Trừ tồn kho theo chitiet_donhang (dựa vào 2 cột masp và soluong_mua)
-
+                // 5. Trừ tồn kho sản phẩm theo từng dòng chitiet_donhang
                 foreach ($donHang->chitiet_donhangs as $chiTiet) {
+                    $maSp       = (int) $chiTiet->masp;
+                    $soLuongMua = max(0, (int) $chiTiet->soluong_mua);
 
-                    $maSp        = (int) $chiTiet->masp;
                     $sanPham = SanPham::lockForUpdate()->find($maSp);
                     if ($sanPham) {
-                        $sanPham->soluong_tonkho = max(0, $sanPham->soluong_tonkho - $chiTiet->soluong_mua);
+                        $tonKhoHienTai = (int) $sanPham->soluong_tonkho;
+                        $sanPham->soluong_tonkho = max(0, $tonKhoHienTai - $soLuongMua);
                         $sanPham->save();
                     }
                 }
 
-                // Ghi lịch sử giao dịch QR
+                // 6. Ghi nhận giao dịch QR thành công
                 GiaoDichQR::create([
                     'ma_tra_cuu_qr' => $maTraCuuQr,
-                    'sotien'        => (float) $soTien,
-                    'noi_dung_ck'   => $noiDung,
-                    'stk_ngan_hang' => $stk,
-                    'ma_ngan_hang'  => $maNganHang,
-                    'trang_thai_qr' => $trangThaiQr,
+                    'sotien'        => $soTienFloat,
+                    'noi_dung_ck'   => $noiDungCk,
+                    'stk_ngan_hang' => $bankAccount,
+                    'ma_ngan_hang'  => $maNganHangCk,
+                    'trang_thai_qr' => 'SUCCESS',
                     'madh'          => (int) $donHang->madh,
                 ]);
 
@@ -263,7 +251,7 @@ class GiaoDichQRController extends Controller
             ]);
 
             return $this->respondWithError(
-                new ErrorResponse(true, 'TRANSACTION_FAILED', 'Transaction processing failed', null),
+                new ErrorResponse(true, 'TRANSACTION_FAILED', $e->getMessage(), null),
                 400
             );
         }

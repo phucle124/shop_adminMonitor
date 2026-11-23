@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('donhang', function (Blueprint $table) {
-            $table->id('madh');
+            $table->id('madh')->autoIncrement();
             $table->double('tongtien');
             $table->enum('trangthai_donhang',['CHO_XAC_NHAN','DA_XAC_NHAN','DA_HUY'])->default('CHO_XAC_NHAN');
             $table->enum('trangthai_thanhtoan',['CHUA_THANH_TOAN','DA_THANH_TOAN'])->default('CHUA_THANH_TOAN');
