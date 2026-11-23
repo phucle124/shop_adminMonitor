@@ -163,7 +163,7 @@ class GiaoDichQRController extends Controller
                 // Setup theo kiểu dữ liệu đặc tả API VietQR yêu cầu
 
                 $rawOrderId      = trim((string) ($callback->orderId ?? ''));
-                $orderId         = $rawOrderId !== '' ? (int) $rawOrderId : 1; // Tạm fallback '1' khi test; bỏ khi chạy thật
+                $orderId         = $rawOrderId !== '' ? (int) $rawOrderId : 2; // Tạm fallback '1' khi test; bỏ khi chạy thật
                 $amount          = (int) ($callback->amount ?? 0); // Long -> int
                 $transType       = strtoupper(trim((string) ($callback->transType ?? ''))); // String
                 $content         = (string) ($callback->content ?? ''); // String
