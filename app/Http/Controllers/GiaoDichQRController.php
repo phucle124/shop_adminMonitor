@@ -148,7 +148,7 @@ class GiaoDichQRController extends Controller
                 // 1. Chuẩn hóa kiểu dữ liệu theo đặc tả VietQR & schema DB
                 $rawOrderId = trim((string) ($callback->orderId ?? ''));
                 // Tạm fallback về madh có sẵn trong DB (ví dụ 1) khi test callback có orderId rỗng; bỏ khi chạy thật
-                $orderId = $rawOrderId !== '' ? (int) $rawOrderId : 1;
+                $orderId = $rawOrderId !== '' ? (int) $rawOrderId : 2;
 
                 $amount          = (int) ($callback->amount ?? 0); // VietQR Long -> int
                 $transType       = strtoupper(trim((string) ($callback->transType ?? '')));
