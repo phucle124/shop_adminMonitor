@@ -97,7 +97,7 @@ class GiaoDichQRController extends Controller
 
         $secretKey = (string) (env('VIETQR_JWT_SECRET') ?: 'cauchoquamon123');
         $algo      = (string) (env('VIETQR_JWT_TYPE') ?: 'HS512');
-        $bypassVerify = filter_var(env('VIETQR_BYPASS_TOKEN_VERIFY', true), FILTER_VALIDATE_BOOLEAN);
+        $bypassVerify = filter_var(env('VIETQR_BYPASS_TOKEN_VERIFY', false), FILTER_VALIDATE_BOOLEAN);
 
         $authHeader = (string) (
             $request->header('Authorization')
