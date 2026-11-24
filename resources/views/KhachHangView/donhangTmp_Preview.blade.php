@@ -128,8 +128,8 @@
                     @endif
                 </div>
 
-                {{-- Form giả lập callback cho đơn hiện tại (madh số nguyên) --}}
-                <form action="{{ route('bank.test.transaction-callback') }}" method="POST" style="margin-bottom: 14px;">
+                
+                <form action="{{ route('vqr.callback.test') }}" method="POST" style="margin-bottom: 14px;">
                     @csrf
                     <input type="hidden" name="madh" value="{{ $donHang->madh }}">
                     <input type="hidden" name="amount" value="{{ (int) round((float) ($qrInfo['amount'] ?? $donHang->tongtien)) }}">
