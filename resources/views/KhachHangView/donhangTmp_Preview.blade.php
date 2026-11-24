@@ -75,33 +75,58 @@
     </div>
 
     {{-- POPUP --}}
+    {{-- POPUP THUẦN BLADE & HTML --}}
     @if (!empty($open_qr_modal) && isset($donHang))
-        <div class="modal-overlay" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-            <div class="modal-box" style="background: #ffffff; width: 100%; max-width: 420px; border-radius: 12px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
-                
-                <h2 style="margin-top: 0; font-size: 20px; color: #0f172a;">Thanh Toán Đơn Hàng #{{ $donHang->madh }}</h2>
-                
-                <div style="line-height: 1.6; margin-bottom: 16px; font-size: 14px; color: #334155;">
+        <div class="modal-overlay" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;">
+            <div class="modal-box" style="background: #ffffff; width: 100%; max-width: 440px; border-radius: 12px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+
+                <h2 style="margin: 0 0 14px 0; font-size: 20px; color: #0f172a;">
+                    Thanh Toán Đơn Hàng #{{ $donHang->madh }}
+                </h2>
+
+                <div style="line-height: 1.65; margin-bottom: 14px; font-size: 14px; color: #334155;">
                     <div><strong>Mã đơn hàng:</strong> {{ $donHang->madh }}</div>
-                    <div><strong>Tổng tiền:</strong> <span style="color: #2563eb; font-weight: bold;">{{ number_format($donHang->tongtien, 0, ',', '.') }} đ</span></div>
+                    <div>
+                        <strong>Tổng tiền:</strong>
+                        <span style="color: #2563eb; font-weight: bold;">
+                            {{ number_format((float) ($qrInfo['amount'] ?? $donHang->tongtien), 0, ',', '.') }} đ
+                        </span>
+                    </div>
                     <div><strong>Trạng thái:</strong> {{ $donHang->trangthai_thanhtoan }}</div>
+
+                    @if (!empty($qrInfo))
+                        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 10px 0;">
+                        <div><strong>Ngân hàng:</strong> {{ $qrInfo['bankName'] ?? '' }} ({{ $qrInfo['bankCode'] ?? '' }})</div>
+                        <div><strong>Số tài khoản:</strong> {{ $qrInfo['bankAccount'] ?? '' }}</div>
+                        <div><strong>Chủ tài khoản:</strong> {{ $qrInfo['userBankName'] ?? '' }}</div>
+                        <div><strong>Nội dung CK:</strong> {{ $qrInfo['content'] ?? ('DH' . $donHang->madh) }}</div>
+                    @endif
                 </div>
 
-                <!-- Hiển thị QR Code từ PHP Controller -->
-                <div style="text-align: center; padding: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-bottom: 20px;">
-                    @if ($qrLink)
-                        <img src="{{ $qrLink }}" alt="Mã VietQR Đơn hàng #{{ $donHang->madh }}" style="max-width: 220px; width: 100%; height: auto; border-radius: 6px;">
-                        <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">Quét mã bằng ứng dụng ngân hàng để hoàn tất</p>
+                <div style="text-align: center; padding: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-bottom: 18px;">
+                    @if (!empty($qrLink))
+                        <p style="margin: 0 0 10px 0; font-size: 13px; color: #1e293b;">
+                            Nhấn nút bên dưới để mở trang VietQR và quét mã thanh toán:
+                        </p>
+                        <a href="{{ $qrLink }}" target="_blank" rel="noopener noreferrer"
+                           style="display: inline-block; padding: 10px 18px; background: #2563eb; color: #ffffff; font-weight: 600; font-size: 14px; border-radius: 8px; text-decoration: none;">
+                            Mở Trang QR VietQR
+                        </a>
+                        <div style="margin-top: 10px; font-size: 11px; color: #64748b; word-break: break-all;">
+                            {{ $qrLink }}
+                        </div>
                     @else
                         <div style="color: #b91c1c; font-size: 13px;">
-                            Đã khởi tạo đơn hàng thành công nhưng chưa lấy được liên kết QR VietQR.
+                            Chưa lấy được liên kết QR VietQR. Bạn có thể chuyển khoản thủ công theo thông tin phía trên.
                         </div>
                     @endif
                 </div>
 
-                
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <a href="{{ route('sanphamIntroduce.index') }}" class="btn btn-cancel" style="text-decoration: none; text-align: center;">Đóng</a>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <a href="{{ route('sanphamIntroduce.index') }}"
+                       style="display: inline-block; padding: 8px 16px; background: #e2e8f0; color: #0f172a; border-radius: 8px; text-decoration: none; font-size: 14px;">
+                        Đóng
+                    </a>
                 </div>
 
             </div>
