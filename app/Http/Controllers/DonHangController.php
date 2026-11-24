@@ -147,12 +147,12 @@ class DonHangController extends Controller
 
         if($donHang->trangthai_thanhtoan !== 'DA_THANH_TOAN'){
             if($donHang->trangthai_donhang !== 'DA_HUY'){
-                if(!empty($donHang->qr_expired_at)){
+                if(!empty($donHang->qr_expires_at)){
 
                   //Convert kiểu ngày + giờ cùng loại với những biến khác => TRÁNH LỆCH KIỂU DỮ LIỆU
-                    $qrExpired_at = Carbon::parse($donHang->qr_expired_at);
+                    $qrExpires_at = Carbon::parse($donHang->qr_expires_at);
 
-                    if(now()->greaterThanOrEqualTo($qrExpired_at)){
+                    if(now()->greaterThanOrEqualTo($qrExpires_at)){
                         $donHang->update(['trangthai_donhang' => 'DA_HUY']);
                         $donHang->refresh();
                     }
