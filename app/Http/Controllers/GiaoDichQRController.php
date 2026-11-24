@@ -95,9 +95,9 @@ class GiaoDichQRController extends Controller
 {
     public function transactionSync(Request $request){
 
-    $secretKey    = (string) (env('VIETQR_JWT_SECRET') ?: 'abcdefghijklmnopqrstuvwxyzzyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA');
+        $secretKey    = (string) (env('VIETQR_JWT_SECRET') ?: 'abcdefghijklmnopqrstuvwxyzzyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA');
         $algo         = (string) (env('VIETQR_JWT_TYPE') ?: 'HS512');
-        $bypassVerify = filter_var(env('VIETQR_BYPASS_TOKEN_VERIFY', true), FILTER_VALIDATE_BOOLEAN);
+        $bypassVerify = filter_var(env('VIETQR_BYPASS_TOKEN_VERIFY', false), FILTER_VALIDATE_BOOLEAN);
 
         $authHeader = (string) (
             $request->header('Authorization')
@@ -164,7 +164,7 @@ class GiaoDichQRController extends Controller
                     : ($referenceNumber !== '' ? $referenceNumber : null);
 
                 if ($orderId <= 0 || $amount <= 0) {
-                    throw new \Exception('Invalid orderId or amount');
+                    throw new \Exception('mã đơn hàng hoặc số tiền chuyển khoản QR không hợp lệ');
                 }
 
                 // Khóa & lấy đơn hàng (madh: bigint UNSIGNED)
@@ -174,18 +174,18 @@ class GiaoDichQRController extends Controller
                     ->first();
 
                 if (!$donHang) {
-                    throw new \Exception('Order not found');
+                    throw new \Exception('Đơn hàng không tồn tại!');
                 }
 
                 if ((string) $donHang->trangthai_thanhtoan === 'DA_THANH_TOAN') {
-                    return $maTraCuuQr ?? 'ALREADY_PAID';
+                    return $maTraCuuQr;
                 }
 
                 // Đối chiếu số tiền (amount: int -> float so với tongtien: double)
                 $soTienFloat  = (float) $amount;
                 $tongTienDon  = (float) $donHang->tongtien;
-                $noiDungCk    = $content !== '' ? $content : 'Nội dung chuyển khoản mặc định';
-                $maNganHangCk = $maNganHang !== '' ? $maNganHang : 'BIDV';
+                $noiDungCk    = $content;
+                $maNganHangCk = $maNganHang;
 
                 if ($soTienFloat < $tongTienDon) {
                     GiaoDichQR::create([
@@ -198,7 +198,7 @@ class GiaoDichQRController extends Controller
                         'madh'          => (int) $donHang->madh,
                     ]);
 
-                    throw new \Exception('Payment amount is less than order total');
+                    throw new \Exception('Số tiền chi trả nhỏ hơn số tiền đơn hàng yêu cầu');
                 }
 
                 // Cập nhật trạng thái đơn hàng
@@ -242,7 +242,7 @@ class GiaoDichQRController extends Controller
             );
 
             return response()->json($res, 200);
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
             Log::error('Lỗi xử lý transactionSync VietQR', [
                 'message' => $e->getMessage(),
                 'orderId' => (string) ($callback->orderId ?? ''),
@@ -261,7 +261,7 @@ class GiaoDichQRController extends Controller
         try {
             JWT::decode($token, new Key($secretKey, $algo));
             return true;
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
             Log::warning('[VQR][validateToken] Failed', [
                 'message' => $e->getMessage(),
                 'algo'    => $algo,
@@ -328,7 +328,7 @@ class GiaoDichQRController extends Controller
                 'status'  => 'FAILED',
                 'message' => $errCode,
             ], $response->successful() ? 200 : $response->status());
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
             Log::error('Lỗi gọi testTransactionCallback VietQR', [
                 'message' => $e->getMessage(),
                 'line'    => $e->getLine(),
@@ -340,5 +340,7 @@ class GiaoDichQRController extends Controller
             ], 500);
         }
     }
+
+    
 }
 

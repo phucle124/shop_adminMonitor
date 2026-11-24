@@ -6,9 +6,12 @@ use App\Models\DonHang;
 use App\Models\SanPham;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Facade;
+
+use function Illuminate\Support\now;
 
 class DonHangController extends Controller
 {
@@ -131,6 +134,105 @@ class DonHangController extends Controller
         }
     }
 
+
+    // Kiểu trả về là đối tượng (kiểu model) cho dạng "môđun xử lý trạng thái Hủy"
+    public function syncExpiredOrderStatus(DonHang $donHang): DonHang{
+
+        $donHang->refresh();
+
+        //Mô tả Luồng xử lý "hủy khi hết timer":
+        // Chỉ cập nhật hủy nếu 'chưa thanh toán' -> nếu 'chưa bị hủy' -> nếu 'đã có thời điểm hết hạn QR'
+        //-> nếu record đơn hàng ở [thời điểm Hiện tại] trùng khớp hoặc sau [thời điểm Hết hạn]
+        //Thì cập nhật 'trangthai_donhang' => 'DA_HUY'
+
+        if($donHang->trangthai_thanhtoan !== 'DA_THANH_TOAN'){
+            if($donHang->trangthai_donhang !== 'DA_HUY'){
+                if(!empty($donHang->qr_expired_at)){
+
+                  //Convert kiểu ngày + giờ cùng loại với những biến khác => TRÁNH LỆCH KIỂU DỮ LIỆU
+                    $qrExpired_at = Carbon::parse($donHang->qr_expired_at);
+
+                    if(now()->greaterThanOrEqualTo($qrExpired_at)){
+                        $donHang->update(['trangthai_donhang' => 'DA_HUY']);
+                        $donHang->refresh();
+                    }
+                }
+            }
+        }
+
+        
+        return $donHang;
+    }
+
+    public function triggerTestTransactionCallback(Request $request){
+        
+        //Lấy mã đơn hàng (số nguyên) từ form gửi lên hoặc từ session tạm
+        $madh = (int) ($request->input('madh') ?? $request->input('orderId') ?? session('madh_cho_thanh_toan') ?? 0);
+
+        if ($madh <= 0) {
+            return redirect()->back()->with('error', 'Không tìm thấy mã đơn hàng hợp lệ.');
+        }
+
+        //Tìm đơn hàng trong cơ sở dữ liệu
+        $donHang = DonHang::where('madh', $madh)->first();
+
+        if (!$donHang) {
+            return redirect()->back()->with('error', 'Không tìm thấy đơn hàng #' . $madh);
+        }
+
+        //Kiểm tra xem đã quá 15 phút chưa -> nếu quá thì tự chuyển đơn sang HUY
+        $donHang = $this->syncExpiredOrderStatus($donHang);
+
+        if (($donHang->trangthai_donhang ?? '') === 'HUY') {
+            return redirect()->back()->with('error', 'Đơn hàng #' . $donHang->madh . ' đã quá 15 phút nên bị hủy tự động.');
+        }
+
+        if (($donHang->trangthai_thanhtoan ?? '') === 'DA_THANH_TOAN') {
+            return redirect()->back()->with('success', 'Đơn hàng #' . $donHang->madh . ' đã thanh toán rồi.');
+        }
+
+        // Chuẩn bị dữ liệu gửi sang VietQR để giả lập giao dịch chuyển khoản
+        $soTien      = (string) (int) round((float) ($request->input('amount') ?? $donHang->tongtien));
+        $noiDung     = (string) ($request->input('content') ?? $donHang->madh);
+        $soTaiKhoan  = (string) $request->input('bankAccount', '');
+        $maNganHang  = (string) $request->input('bankCode', '');
+
+        session(['madh_cho_thanh_toan' => $donHang->madh]);
+
+        // Tạo request giả lập và gọi route chứa hàm testTransactionCallback bên GiaoDichQRController
+        $qrRequest = Request::create(
+            route('vqr.callback.test'),
+            'POST',
+            [
+                'bankAccount' => $soTaiKhoan,
+                'bankCode'    => $maNganHang,
+                'amount'      => $soTien,
+                'content'     => $noiDung,
+            ]
+        );
+        $qrRequest->setLaravelSession($request->session());
+
+        try {
+            $qrController = app(GiaoDichQRController::class);
+            $qrResponse   = $qrController->testTransactionCallback($qrRequest);
+
+            $ketQua = method_exists($qrResponse, 'getData') ? $qrResponse->getData(true) : [];
+            $trangThai = strtoupper((string) ($ketQua['status'] ?? 'FAILED'));
+
+            // Thông báo kết quả quay lại màn hình hiện tại
+            if ($trangThai === 'SUCCESS') {
+                return redirect()->back()->with('success', 'Đã gửi giả lập thanh toán cho đơn #' . $donHang->madh);
+            } else {
+                $loi = (string) ($ketQua['message'] ?? 'Lỗi không xác định');
+                return redirect()->back()->with('error', 'Giả lập thanh toán thất bại: ' . $loi);
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Có lỗi xảy ra khi gọi giả lập thanh toán: ' . $e->getMessage());
+        }
+    }
+
+
+
     public function checkPaymentStatus($madh){
         $donHang = DonHang::where('madh', $madh)->first();
 
@@ -150,7 +252,7 @@ class DonHangController extends Controller
         return response()->json([
             'success' => true,
             'is_paid' => false,
-            'message' => 'Đang chờ thanh toán...'
+            'message' => 'Đang chờ thanh toán'
         ]);
     }
 }

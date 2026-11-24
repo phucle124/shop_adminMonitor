@@ -18,6 +18,12 @@ return new class extends Migration
             $table->enum('trangthai_thanhtoan',['CHUA_THANH_TOAN','DA_THANH_TOAN'])->default('CHUA_THANH_TOAN');
             $table->unsignedBigInteger('makh');
             $table->foreign('makh')->references('makh')->on('khachhang');
+
+            //Thêm 3 cột  => phục vụ timer 15ph đếm ngược
+            $table->dateTime('qr_created_at')->nullable()->default(null);
+            $table->dateTime('qr_expired_at')->nullable()->default(null);
+            $table->dateTime('qr_paid_at')->nullable()->default(null);
+            
             $table->timestamps();
         });
     }

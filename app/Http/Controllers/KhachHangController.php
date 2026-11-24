@@ -114,6 +114,8 @@ class KhachHangController extends Controller
         return view('KhachHangView.donhangTmp_Preview', compact('donhang'));
     }
 
+
+
     //Hàm chính thức lưu vào Database khi khách bấm "Xác nhận đặt hàng"
     public function xacNhanDatHang(Request $request){
 
@@ -248,6 +250,22 @@ class KhachHangController extends Controller
                 ]);
             }
 
+            //Giả lập xử lý Timer đếm ngược (Do api môi trường test KHÔNG HỖ TRỢ)
+            if ($qrInfo) {
+                $now = now();
+                $expiresAt = $now->copy()->addMinutes(15);
+
+                $donHang->update([
+                    'qr_created_at' => $now,
+                    'qr_expires_at' => $expiresAt,
+                ]);
+
+                // Ghi đè thay đổi lên record có sẵn => để giao diện popup dùng giá trị mới nhất (metaData)
+                $donHang->refresh();
+            }
+
+
+
             session(['madh_cho_thanh_toan' => $donHang->madh]);
             session()->forget('don_hang_tam');
 
@@ -275,7 +293,7 @@ class KhachHangController extends Controller
 
         $ten_avatar = session('ten_khach_hang');
 
-        return redirect()->route('sanphamIntroduce.index')->with('message', 'Đơn hàng đã hủy. Bạn được chuyển về trang "Products"');
+        return redirect()->route('sanphamIntroduce.index',compact('ten_avatar'))->with('message', 'Đơn hàng đã hủy. Bạn được chuyển về trang "Products"');
     }
 
 }
