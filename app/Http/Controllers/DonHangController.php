@@ -193,7 +193,7 @@ class DonHangController extends Controller
 
         // Chuẩn bị dữ liệu gửi sang VietQR để giả lập giao dịch chuyển khoản
         $soTien      = (string) (int) round((float) ($request->input('amount') ?? $donHang->tongtien));
-        $noiDung     = (string) ($request->input('content') ?? $donHang->madh);
+        $noiDung     = (string) ($request->input('content'));
         $soTaiKhoan  = (string) $request->input('bankAccount', '');
         $maNganHang  = (string) $request->input('bankCode', '');
 

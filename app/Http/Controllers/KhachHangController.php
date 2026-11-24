@@ -234,7 +234,7 @@ class KhachHangController extends Controller
                 $qrResponse = Http::post(route('vqr.customer.generate'),[
                     'orderId' => (string) $donHang->madh,
                     'amount' => (string) (int) round($donHang->tongtien),
-                    'content' =>  'Chuyen khoan DH #' . $donHang->madh,
+                    'content' => (string) $donHang->content,
                 ]);
 
                 if($qrResponse->successful()){
@@ -298,7 +298,7 @@ class KhachHangController extends Controller
 
     // Trong KhachHangController
     public function kiemTraTrangThaiDonHang($madh) {
-        
+
         $maKhachHang = session('ma_khach_hang');
         if (!$maKhachHang) {
             return response()->json(['authenticated' => false], 401);
