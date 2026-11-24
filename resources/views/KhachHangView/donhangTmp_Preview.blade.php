@@ -75,7 +75,6 @@
     </div>
 
     {{-- POPUP --}}
-    {{-- POPUP THUẦN BLADE & HTML --}}
     @if (!empty($open_qr_modal) && isset($donHang))
         <div class="modal-overlay" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;">
             <div class="modal-box" style="background: #ffffff; width: 100%; max-width: 440px; border-radius: 12px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
@@ -92,24 +91,31 @@
                             {{ number_format((float) ($qrInfo['amount'] ?? $donHang->tongtien), 0, ',', '.') }} đ
                         </span>
                     </div>
-                    <div><strong>Trạng thái:</strong> {{ $donHang->trangthai_thanhtoan }}</div>
+                    <div><strong>Trạng thái thanh toán:</strong> {{ $donHang->trangthai_thanhtoan }}</div>
+                    <div><strong>Trạng thái đơn hàng:</strong> {{ $donHang->trangthai_donhang }}</div>
+
+                    @if (!empty($donHang->qr_expires_at))
+                        <div style="margin-top: 6px; padding: 8px 10px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; color: #92400e; font-size: 13px;">
+                            <strong>Hiệu lực QR (15 phút):</strong> hết hạn lúc {{ $donHang->qr_expires_at }}
+                        </div>
+                    @endif
 
                     @if (!empty($qrInfo))
                         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 10px 0;">
                         <div><strong>Ngân hàng:</strong> {{ $qrInfo['bankName'] ?? '' }} ({{ $qrInfo['bankCode'] ?? '' }})</div>
                         <div><strong>Số tài khoản:</strong> {{ $qrInfo['bankAccount'] ?? '' }}</div>
                         <div><strong>Chủ tài khoản:</strong> {{ $qrInfo['userBankName'] ?? '' }}</div>
-                        <div><strong>Nội dung CK:</strong> {{ $qrInfo['content'] ?? ('DH' . $donHang->madh) }}</div>
+                        <div><strong>Nội dung CK:</strong> {{ $qrInfo['content'] ?? (string) $donHang->madh }}</div>
                     @endif
                 </div>
 
-                <div style="text-align: center; padding: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-bottom: 18px;">
+                <div style="text-align: center; padding: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-bottom: 14px;">
                     @if (!empty($qrLink))
                         <p style="margin: 0 0 10px 0; font-size: 13px; color: #1e293b;">
                             Nhấn nút bên dưới để mở trang VietQR và quét mã thanh toán:
                         </p>
                         <a href="{{ $qrLink }}" target="_blank" rel="noopener noreferrer"
-                           style="display: inline-block; padding: 10px 18px; background: #2563eb; color: #ffffff; font-weight: 600; font-size: 14px; border-radius: 8px; text-decoration: none;">
+                        style="display: inline-block; padding: 10px 18px; background: #2563eb; color: #ffffff; font-weight: 600; font-size: 14px; border-radius: 8px; text-decoration: none;">
                             Mở Trang QR VietQR
                         </a>
                         <div style="margin-top: 10px; font-size: 11px; color: #64748b; word-break: break-all;">
@@ -122,9 +128,24 @@
                     @endif
                 </div>
 
+                {{-- Form giả lập callback cho đơn hiện tại (madh số nguyên) --}}
+                <form action="{{ route('bank.test.transaction-callback') }}" method="POST" style="margin-bottom: 14px;">
+                    @csrf
+                    <input type="hidden" name="madh" value="{{ $donHang->madh }}">
+                    <input type="hidden" name="amount" value="{{ (int) round((float) ($qrInfo['amount'] ?? $donHang->tongtien)) }}">
+                    <input type="hidden" name="content" value="{{ $donHang->madh }}">
+                    <input type="hidden" name="bankAccount" value="{{ $qrInfo['bankAccount'] ?? '' }}">
+                    <input type="hidden" name="bankCode" value="{{ $qrInfo['bankCode'] ?? '' }}">
+
+                    <button type="submit"
+                            style="width: 100%; padding: 10px 14px; background: #059669; color: #ffffff; font-weight: 600; font-size: 14px; border: 0; border-radius: 8px; cursor: pointer;">
+                        Giả Lập Thanh Toán Thành Công (#{{ $donHang->madh }})
+                    </button>
+                </form>
+
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
                     <a href="{{ route('sanphamIntroduce.index') }}"
-                       style="display: inline-block; padding: 8px 16px; background: #e2e8f0; color: #0f172a; border-radius: 8px; text-decoration: none; font-size: 14px;">
+                    style="display: inline-block; padding: 8px 16px; background: #e2e8f0; color: #0f172a; border-radius: 8px; text-decoration: none; font-size: 14px;">
                         Đóng
                     </a>
                 </div>
