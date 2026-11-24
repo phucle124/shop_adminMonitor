@@ -68,68 +68,68 @@ class DonHangController extends Controller
         //
     }
 
-    public function buyNow(Request $req)
-{
-    $req->validate([
-        'masp' => 'required|exists:sanpham,masp',
-    ]);
+    public function buyNow(Request $req){
 
-    $sp = SanPham::find($req->masp);
+        $req->validate([
+            'masp' => 'required|exists:sanpham,masp',
+        ]);
 
-    if (!$sp) {
-        return redirect()->route('sanpham.show')->with('error', 'Không tìm thấy sản phẩm !');
+        $sp = SanPham::find($req->masp);
+
+        if (!$sp) {
+            return redirect()->route('sanpham.show')->with('error', 'Không tìm thấy sản phẩm !');
+        }
+
+        $req->validate([
+            'soluong_mua' => 'required|integer|min:1|max:' . $sp->soluong_tonkho,
+        ], [
+            'soluong_mua.max' => '!!![CẢNH BÁO]: không được mua vượt quá số lượng tồn kho là (' . $sp->soluong_tonkho . ') cái!!!'
+        ]);
+
+        $maKhachHang = $req->input('makh') ?? session('ma_khach_hang') ?? Auth::id();
+        if (!$maKhachHang) {
+            return redirect()->route('login')->with('error', 'Vui lòng đăng nhập trước khi đặt hàng!');
+        }
+
+        $sl_Mua = (int) $req->soluong_mua;
+
+        if ($sl_Mua > $sp->soluong_tonkho) {
+            return back()->with('error', 'Sản phẩm không đủ')->withInput();
+        }
+
+        // Tổng tiền khách cần thanh toán (không voucher/khuyến mãi -> giaban = dongia)
+        $tongtien = $sp->dongia * $sl_Mua;
+
+        try {
+            $donhang = DB::transaction(function () use ($maKhachHang, $sp, $sl_Mua, $tongtien) {
+                $donhang = DonHang::create([
+                    'makh'                => $maKhachHang,
+                    'tongtien'            => $tongtien,
+                    'trangthai_donhang'   => 'CHO_XAC_NHAN',
+                    'trangthai_thanhtoan' => 'CHUA_THANH_TOAN',
+                ]);
+
+                $donhang->chitiet_donhangs()->create([
+                    'giaban'      => $sp->dongia,
+                    'soluong_mua' => $sl_Mua,
+                    'madh'        => $donhang->madh,
+                    'masp'        => $sp->masp,
+                ]);
+
+                return $donhang;
+            });
+
+            // Lưu madh vừa tạo vào session để caller nội bộ lấy được ngay cả khi return redirect
+            session(['madh_vua_tao' => $donhang->madh]);
+
+
+            //PHẢI TRẢ mã đơn hàng mã phía
+            return redirect()->route('donhang.confirm', ['madh' => $donhang->madh])->with('success', 'Tạo đơn hàng thành công!');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Lỗi buyNow: ' . $e->getMessage());
+            return back()->with('error', 'Lỗi giao dịch !')->withInput();
+        }
     }
-
-    $req->validate([
-        'soluong_mua' => 'required|integer|min:1|max:' . $sp->soluong_tonkho,
-    ], [
-        'soluong_mua.max' => '!!![CẢNH BÁO]: không được mua vượt quá số lượng tồn kho là (' . $sp->soluong_tonkho . ') cái!!!'
-    ]);
-
-    $maKhachHang = $req->input('makh') ?? session('ma_khach_hang') ?? Auth::id();
-    if (!$maKhachHang) {
-        return redirect()->route('login')->with('error', 'Vui lòng đăng nhập trước khi đặt hàng!');
-    }
-
-    $sl_Mua = (int) $req->soluong_mua;
-
-    if ($sl_Mua > $sp->soluong_tonkho) {
-        return back()->with('error', 'Sản phẩm không đủ')->withInput();
-    }
-
-    // Tổng tiền khách cần thanh toán (không voucher/khuyến mãi -> giaban = dongia)
-    $tongtien = $sp->dongia * $sl_Mua;
-
-    try {
-        $donhang = DB::transaction(function () use ($maKhachHang, $sp, $sl_Mua, $tongtien) {
-            $donhang = DonHang::create([
-                'makh'                => $maKhachHang,
-                'tongtien'            => $tongtien,
-                'trangthai_donhang'   => 'CHO_XAC_NHAN',
-                'trangthai_thanhtoan' => 'CHUA_THANH_TOAN',
-            ]);
-
-            $donhang->chitiet_donhangs()->create([
-                'giaban'      => $sp->dongia,
-                'soluong_mua' => $sl_Mua,
-                'madh'        => $donhang->madh,
-                'masp'        => $sp->masp,
-            ]);
-
-            return $donhang;
-        });
-
-        // Lưu madh vừa tạo vào session để caller nội bộ lấy được ngay cả khi return redirect
-        session(['madh_vua_tao' => $donhang->madh]);
-
-
-        //PHẢI TRẢ mã đơn hàng mã phía
-        return redirect()->route('donhang.confirm', ['madh' => $donhang->madh])->with('success', 'Tạo đơn hàng thành công!');
-    } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error('Lỗi buyNow: ' . $e->getMessage());
-        return back()->with('error', 'Lỗi giao dịch !')->withInput();
-    }
-}
 
     public function checkPaymentStatus($madh){
         $donHang = DonHang::where('madh', $madh)->first();

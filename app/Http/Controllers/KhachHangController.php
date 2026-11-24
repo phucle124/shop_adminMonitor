@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\DonHang;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -133,12 +135,10 @@ class KhachHangController extends Controller
             return redirect()->route('KhachHang.index')->with('error', 'Nguời dùng không hợp lệ. Bạn không có quyền xác nhận đơn hàng này!');
         }
 
-        $masp       = (int) ($donhangtmp_SP['masp'] ?? 0);
-        $soLuongMua = max(1, (int) ($donhangtmp_SP['soluong_mua'] ?? 1));
-        $donGia     = (float) ($donhangtmp_SP['dongia'] ?? 0);
-        $tongTien   = isset($donhangtmp_SP['tongtien'])
-            ? (float) $donhangtmp_SP['tongtien']
-            : ($donGia * $soLuongMua);
+        $masp       = (int) ($donhangtmp_SP['masp']);
+        $soLuongMua = (int) ($donhangtmp_SP['soluong_mua']);
+        $donGia     = (float) ($donhangtmp_SP['dongia']);
+        $tongTien   = isset($donhangtmp_SP['tongtien']) ? (float) $donhangtmp_SP['tongtien'] : ($donGia * $soLuongMua);
 
         if ($masp <= 0 || $donGia <= 0 || $tongTien <= 0) {
             return redirect()->back()->with('error', 'Dữ liệu sản phẩm hoặc tổng tiền không hợp lệ.');
@@ -167,30 +167,64 @@ class KhachHangController extends Controller
 
             // Nếu buyNow trả về JsonResponse hoặc mảng/model, bóc dữ liệu linh hoạt
             $donHang = null;
-            if ($ketQuaBuyNow instanceof DonHang) {
-                $donHang = $ketQuaBuyNow;
-            } elseif ($ketQuaBuyNow instanceof JsonException) {
-                $payload = $ketQuaBuyNow->getData(true);
-                if ($ketQuaBuyNow->getStatusCode() >= 400 || ($payload['error'] ?? false)) {
-                    $msg = $payload['message'] ?? 'Không thể khởi tạo đơn hàng từ buyNow.';
-                    return redirect()->back()->with('error', $msg);
-                }
-                $madhTaoMoi = data_get($payload, 'madh')
-                    ?? data_get($payload, 'data.madh')
-                    ?? data_get($payload, 'donhang.madh');
 
-                if ($madhTaoMoi) {
-                    $donHang = DonHang::find($madhTaoMoi);
-                }
-            } elseif (is_array($ketQuaBuyNow)) {
-                $donHang = $ketQuaBuyNow['donHang'] ?? $ketQuaBuyNow['donhang'] ?? null;
+        if ($ketQuaBuyNow instanceof DonHang) {
+            $donHang = $ketQuaBuyNow;
+        } elseif ($ketQuaBuyNow instanceof JsonResponse) {
+            $payload = $ketQuaBuyNow->getData(true);
+            if ($ketQuaBuyNow->getStatusCode() >= 400 || ($payload['error'] ?? false)) {
+                return redirect()->back()->with('error', $payload['message'] ?? 'Không thể khởi tạo đơn hàng từ buyNow.');
             }
 
-            //Nếu Môđun buyNow không chủ động trả về mã đơn hàng ----thì----> đơn hàng không tồn tại
-            if (!$donHang) {
-                return redirect()->back()->with('error', 'Đơn hàng đã được xử lý nhưng không lấy được thông tin đơn mới');
+            $madhTaoMoi = data_get($payload, 'madh')
+                ?? data_get($payload, 'data.madh')
+                ?? data_get($payload, 'donhang.madh')
+                ?? session()->pull('madh_vua_tao');
+
+            if ($madhTaoMoi) {
+                $donHang = DonHang::where('madh', $madhTaoMoi)->first();
+            }
+        } elseif ($ketQuaBuyNow instanceof RedirectResponse) {
+            $redirectSession = $ketQuaBuyNow->getSession() ?? $request->session();
+            $flashError      = $redirectSession->get('error');
+            $sessionErrors   = $redirectSession->get('errors');
+
+            if ($flashError) {
+                return redirect()->back()->with('error', $flashError);
+            }
+            if ($sessionErrors && $sessionErrors->any()) {
+                return redirect()->back()->withErrors($sessionErrors);
             }
 
+            // Lấy madh từ session (do buyNow lưu) hoặc từ query ?madh= trên targetUrl
+            $madhTuSession = $redirectSession->pull('madh_vua_tao') ?? session()->pull('madh_vua_tao');
+            parse_str(parse_url($ketQuaBuyNow->getTargetUrl(), PHP_URL_QUERY) ?? '', $queryParams);
+            $madhTarget = $madhTuSession ?? ($queryParams['madh'] ?? null);
+
+            if ($madhTarget) {
+                $donHang = DonHang::where('madh', $madhTarget)->first();
+            }
+        } elseif (is_array($ketQuaBuyNow)) {
+            $donHang = $ketQuaBuyNow['donHang'] ?? $ketQuaBuyNow['donhang'] ?? null;
+        }
+
+        // Fallback: lấy đơn mới nhất của khách hàng nếu vẫn chưa bắt được madh
+        if (!$donHang) {
+            $donHang = DonHang::where('makh', (int) $maKhachHang)
+                ->orderByDesc('madh')
+                ->first();
+        }
+
+        if (!$donHang) {
+            Log::warning('Không lấy được thông tin đơn hàng mới sau buyNow', [
+                'makh'            => $maKhachHang,
+                'ketQuaBuyNow'    => is_object($ketQuaBuyNow) ? get_class($ketQuaBuyNow) : gettype($ketQuaBuyNow),
+                'targetUrl'       => $ketQuaBuyNow instanceof RedirectResponse ? $ketQuaBuyNow->getTargetUrl() : null,
+                'session_madh'    => session('madh_vua_tao'),
+            ]);
+
+            return redirect()->back()->with('error', 'Đơn hàng đã được xử lý nhưng không lấy được thông tin đơn mới');
+        }
             $qrInfo = null;
             $qrLink = null;
 
@@ -198,7 +232,7 @@ class KhachHangController extends Controller
                 $qrResponse = Http::post(route('vqr.customer.generate'),[
                     'orderId' => (string) $donHang->madh,
                     'amount' => (string) (int) round($donHang->tongtien),
-                    'content' =>  'Test chuyen khoan thanh toan ma don hang #('. $donHang->madh .')',
+                    'content' =>  'Test chuyen khoan thanh toan ma don hang #' . $donHang->madh,
                 ]);
 
                 if($qrResponse->successful()){
