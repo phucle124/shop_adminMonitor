@@ -234,7 +234,7 @@ class KhachHangController extends Controller
                 $qrResponse = Http::post(route('vqr.customer.generate'),[
                     'orderId' => (string) $donHang->madh,
                     'amount' => (string) (int) round($donHang->tongtien),
-                    'content' =>  'Test chuyen khoan thanh toan ma don hang #' . $donHang->madh,
+                    'content' =>  'Chuyen khoan DH #' . $donHang->madh,
                 ]);
 
                 if($qrResponse->successful()){

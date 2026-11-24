@@ -19,6 +19,9 @@ class DonHang extends Model
         'trangthai_donhang',
         'trangthai_thanhtoan',
         'makh', //Luu y: PHẢI gán FK (từ column trên db thực tế) vào mass 
+        'qr_created_at',
+        'qr_expires_at',
+        'paid_at',
     ];
 
     // Các cột muốn ẩn khi chuyển sang JSON/Array (Mật khẩu, token...)
