@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DonHangController;
 use App\Http\Controllers\GiaoDichQRController;
 use App\Http\Controllers\KhachHangController;
 use App\Http\Controllers\SanPhamController;
@@ -42,6 +43,9 @@ Route::get('/khach-hang/xem-lai-don-hang', [KhachHangController::class, 'xemLaiD
 
 Route::post('/khach-hang/xac-nhan-don-hang',[KhachHangController::class, 'xacNhanDatHang'])->name('donhang.confirm');
 
+Route::post('/khach-hang/huy-don-hang',[KhachHangController::class,'HuyDatHang'])->name('donhangtmp.cancel');
+
+
 
 Route::prefix('vqr')->group(function (){
 
@@ -63,6 +67,9 @@ Route::get('/don-hang/thanh-cong/{madh}', function ($madh) {
     return view('KhachHangView.PaymentSuccess', compact('madh'));
 })->name('donhang.thanhcong');
 
+
+//Dơn hàng
+Route::post('/don-hang/create', [DonHangController::class,'buyNow'])->name('donhang.buy-now');
 
 
 //Quản trị viên đăng nhập

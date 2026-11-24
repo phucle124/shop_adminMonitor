@@ -137,7 +137,7 @@ class GiaoDichQRController extends Controller
             $data = $request->all();
         }
 
-        Log::info('[VQR][transactionSync] Incoming payload', [
+        Log::info('Payload được bắn về', [
             'payload' => $data,
         ]);
 
@@ -145,7 +145,7 @@ class GiaoDichQRController extends Controller
 
         try {
             $refTransactionId = DB::transaction(function () use ($callback) {
-                // 1. Chuẩn hóa kiểu dữ liệu theo đặc tả VietQR & schema DB
+                // Chuẩn hóa kiểu dữ liệu theo đặc tả VietQR & schema DB
                 $rawOrderId = trim((string) ($callback->orderId ?? ''));
                 // Tạm fallback về madh có sẵn trong DB (ví dụ 1) khi test callback có orderId rỗng; bỏ khi chạy thật
                 $orderId = $rawOrderId !== '' ? (int) $rawOrderId : 2;
@@ -167,7 +167,7 @@ class GiaoDichQRController extends Controller
                     throw new \Exception('Invalid orderId or amount');
                 }
 
-                // 2. Khóa & lấy đơn hàng (madh: bigint UNSIGNED)
+                // Khóa & lấy đơn hàng (madh: bigint UNSIGNED)
                 $donHang = DonHang::with('chitiet_donhangs')
                     ->where('madh', $orderId)
                     ->lockForUpdate()
@@ -181,7 +181,7 @@ class GiaoDichQRController extends Controller
                     return $maTraCuuQr ?? 'ALREADY_PAID';
                 }
 
-                // 3. Đối chiếu số tiền (amount: int -> float so với tongtien: double)
+                // Đối chiếu số tiền (amount: int -> float so với tongtien: double)
                 $soTienFloat  = (float) $amount;
                 $tongTienDon  = (float) $donHang->tongtien;
                 $noiDungCk    = $content !== '' ? $content : 'Nội dung chuyển khoản mặc định';
@@ -201,13 +201,13 @@ class GiaoDichQRController extends Controller
                     throw new \Exception('Payment amount is less than order total');
                 }
 
-                // 4. Cập nhật trạng thái đơn hàng
+                // Cập nhật trạng thái đơn hàng
                 $donHang->update([
                     'trangthai_donhang'   => 'DA_XAC_NHAN',
                     'trangthai_thanhtoan' => 'DA_THANH_TOAN',
                 ]);
 
-                // 5. Trừ tồn kho sản phẩm theo từng dòng chitiet_donhang
+                // Trừ tồn kho sản phẩm theo từng dòng chitiet_donhang
                 foreach ($donHang->chitiet_donhangs as $chiTiet) {
                     $maSp       = (int) $chiTiet->masp;
                     $soLuongMua = max(0, (int) $chiTiet->soluong_mua);
@@ -220,7 +220,7 @@ class GiaoDichQRController extends Controller
                     }
                 }
 
-                // 6. Ghi nhận giao dịch QR thành công
+                // Ghi nhận giao dịch QR thành công
                 GiaoDichQR::create([
                     'ma_tra_cuu_qr' => $maTraCuuQr,
                     'sotien'        => $soTienFloat,

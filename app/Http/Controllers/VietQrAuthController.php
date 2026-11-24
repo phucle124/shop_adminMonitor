@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Exception;
 use Illuminate\Http\Request;
-use \Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -18,25 +17,27 @@ class VietQrAuthController extends Controller
     public function getVietQrAccessToken(): string 
     {
         return Cache::remember('vietqr_access_token', now()->addMinutes(50), function () {
-            $username = 'customer-deviceshop-user26728';
-            $password = 'Y3VzdG9tZXItZGV2aWNlc2hvcC11c2VyMjY3Mjg=';
+            $username = env('VIETQR_AUTH_USERNAME'); //'customer-deviceshop-user26728';
+            $password = env('VIETQR_AUTH_PASSWORD'); //'Y3VzdG9tZXItZGV2aWNlc2hvcC11c2VyMjY3Mjg=';
 
             if (empty($username) || empty($password)) {
                 throw new Exception('Thiếu cấu hình VIETQR_AUTH_USERNAME hoặc VIETQR_AUTH_PASSWORD');
             }
 
             $response = Http::withBasicAuth($username, $password)
-                ->acceptJson()
-                ->asJson()
-                ->timeout(15)
-                ->post('https://dev.vietqr.org/vqr/api/token_generate',[]);
+                ->acceptJson()  //Accept: application/json
+                ->asJson()      //Content-type: application/json
+                                //->timeout(15) (optional)
+                ->post('https://dev.vietqr.org/vqr/api/token_generate',[]); //method mặc định là post khi gọi api này
+                                                        //Và thêm [] để asJson mã hóa thành {} để sẵn cấu trúc json body request
+                                                        //Để khi có dữ liệu đổ về sẽ không sợ việc chỉ lấy 1 field duy nhất 
 
             if ($response->failed()) {
                 throw new Exception('Lấy token VietQR thất bại (HTTP ' . $response->status() . ')');
             }
 
             $data = $response->json();
-            $token = $data['access_token'] ?? data_get($data, 'data.access_token');
+            $token = $data['access_token']; //?? data_get($data, 'data.access_token');
 
             if (empty($token)) {
                 throw new Exception('Không tìm thấy access_token trong phản hồi của VietQR');
@@ -77,14 +78,14 @@ class VietQrAuthController extends Controller
                 return response()->json([
                     'status'       => $response->status(),
                     'message' => 'Gọi API tạo mã QR từ VietQR thất bại', //message nội bộ
-                    'object'       => $response->json() ?? $response->body(),
+                    'object'       => $response->json() //?? $response->body(),
                 ], $response->status());    //status code từ VietQR
             }
 
             return response()->json([
                 // 'status'       => $response->status(),   //Do Response từ api này có dạng là "data", KO PHẢI là status + message
                 'message' => 'Tạo mã QR thành công', //message nội bộ
-                'object'       => $response->json() ?? $response->body(),
+                'object'       => $response->json() //?? $response->body(),
             ], 200);
 
         } catch (Exception $e) {

@@ -54,7 +54,7 @@
 
             {{-- <form action="{{ route('OrderDetails.show') }}" method="post"> --}}
             <form action="{{ route('donhangtmp.post') }}" method="post">
-
+                @csrf
                 <input type="hidden" name="masp" value="{{ $sp->masp }}">
                 <input type="hidden" name="tensp" value="{{ $sp->tensp }}">
                 <input type="hidden" name="loaisp" value="{{ $sp->loaisp }}">
