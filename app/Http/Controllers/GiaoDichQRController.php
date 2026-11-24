@@ -146,22 +146,43 @@ class GiaoDichQRController extends Controller
         try {
             $refTransactionId = DB::transaction(function () use ($callback) {
                 // Chuẩn hóa kiểu dữ liệu theo đặc tả VietQR & schema DB
-                $rawOrderId = trim((string) ($callback->orderId ?? ''));
+                $rawContent = (string) ($data['content'] ?? $callback->content ?? '');
+                $rawOrderId = trim((string) ($data['orderId'] ?? $callback->orderId ?? ''));
+
+                Log::info('[VQR][transactionSync] Raw content từ VietQR', [
+                    'content_raw' => $rawContent,
+                    'orderId_raw' => $rawOrderId,
+                ]);
+
+                // 2. Xác định mã đơn hàng (madh)
                 if ($rawOrderId !== '' && is_numeric($rawOrderId)) {
                     $orderId = (int) $rawOrderId;
+                } elseif (preg_match('/(\d{4,})/', $rawContent, $m)) {
+                    $orderId = (int) $m[1];
                 } else {
-                    $rawContent = trim((string) ($callback->content ?? ''));
-                    $orderId = preg_match('/\b(\d+)\b/', $rawContent, $m) ? (int) $m[1] : 0;
+                    // Fallback nếu content là chuỗi test mặc định (ví dụ "VQR... Test Qr") không chứa số madh
+                    $latestPending = DonHang::where('trangthai_thanhtoan', '!=', 'DA_THANH_TOAN')
+                        ->where(function ($q) {
+                            $q->whereNull('trangthai_donhang')
+                            ->orWhere('trangthai_donhang', '!=', 'DA_HUY');
+                        })
+                        ->where(function ($q) {
+                            $q->whereNull('qr_expires_at')
+                            ->orWhere('qr_expires_at', '>=', now());
+                        })
+                        ->orderByDesc('madh')
+                        ->first();
+
+                    $orderId = $latestPending ? (int) $latestPending->madh : 0;
                 }
 
-                $amount          = (int) ($callback->amount ?? 0);
-                $transType       = strtoupper(trim((string) ($callback->transType ?? '')));
-                $content         = trim((string) ($callback->content ?? ''));
-                $bankAccount     = trim((string) ($callback->bankaccount ?? ''));
-                $transactionId   = trim((string) ($callback->transactionid ?? ''));
-                $referenceNumber = trim((string) ($callback->referencenumber ?? ''));
-                $transactionTime = (int) ($callback->transactiontime ?? 0);
-                $maNganHang      = trim((string) ($callback->serviceCode ?? ''));
+                $amount          = (int) ($data['amount'] ?? $callback->amount ?? 0);
+                $transType       = strtoupper((string) ($data['transType'] ?? $callback->transType ?? 'C'));
+                $bankAccount     = (string) ($data['bankaccount'] ?? $callback->bankaccount ?? '');
+                $transactionId   = (string) ($data['transactionid'] ?? $callback->transactionid ?? '');
+                $referenceNumber = (string) ($data['referencenumber'] ?? $callback->referencenumber ?? '');
+                $transactionTime = (int) ($data['transactiontime'] ?? $callback->transactiontime ?? 0);
+                $maNganHang      = (string) ($data['serviceCode'] ?? $callback->serviceCode ?? '');
 
                 $maTraCuuQr = $transactionId !== ''
                     ? $transactionId
@@ -198,7 +219,7 @@ class GiaoDichQRController extends Controller
 
                 $soTienFloat  = (float) $amount;
                 $tongTienDon  = (float) $donHang->tongtien;
-                $noiDungCk    = $content;
+                $noiDungCk    = $rawContent;
                 $maNganHangCk = $maNganHang;
 
                 if ($soTienFloat < $tongTienDon) {
