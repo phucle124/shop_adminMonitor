@@ -147,16 +147,20 @@ class GiaoDichQRController extends Controller
             $refTransactionId = DB::transaction(function () use ($callback) {
                 // Chuẩn hóa kiểu dữ liệu theo đặc tả VietQR & schema DB
                 $rawOrderId = trim((string) ($callback->orderId ?? ''));
-                // Tạm fallback về madh có sẵn trong DB (ví dụ 1) khi test callback có orderId rỗng; bỏ khi chạy thật
-                $orderId = $rawOrderId !== '' ? (int) $rawOrderId : 2;
+                if ($rawOrderId !== '' && is_numeric($rawOrderId)) {
+                    $orderId = (int) $rawOrderId;
+                } else {
+                    $rawContent = trim((string) ($callback->content ?? ''));
+                    $orderId = preg_match('/\b(\d+)\b/', $rawContent, $m) ? (int) $m[1] : 0;
+                }
 
-                $amount          = (int) ($callback->amount ?? 0); // VietQR Long -> int
+                $amount          = (int) ($callback->amount ?? 0);
                 $transType       = strtoupper(trim((string) ($callback->transType ?? '')));
                 $content         = trim((string) ($callback->content ?? ''));
                 $bankAccount     = trim((string) ($callback->bankaccount ?? ''));
                 $transactionId   = trim((string) ($callback->transactionid ?? ''));
                 $referenceNumber = trim((string) ($callback->referencenumber ?? ''));
-                $transactionTime = (int) ($callback->transactiontime ?? 0); // VietQR Long -> int
+                $transactionTime = (int) ($callback->transactiontime ?? 0);
                 $maNganHang      = trim((string) ($callback->serviceCode ?? ''));
 
                 $maTraCuuQr = $transactionId !== ''
@@ -164,37 +168,34 @@ class GiaoDichQRController extends Controller
                     : ($referenceNumber !== '' ? $referenceNumber : null);
 
                 if ($orderId <= 0 || $amount <= 0) {
-                    throw new \Exception('mã đơn hàng hoặc số tiền chuyển khoản QR không hợp lệ');
+                    throw new \Exception('Mã đơn hàng (madh) hoặc số tiền chuyển khoản QR không hợp lệ (orderId=' . $orderId . ', amount=' . $amount . ')');
                 }
 
-                // Khóa & lấy đơn hàng (madh: bigint UNSIGNED)
                 $donHang = DonHang::with('chitiet_donhangs')
                     ->where('madh', $orderId)
                     ->lockForUpdate()
                     ->first();
 
                 if (!$donHang) {
-                    throw new \Exception('Đơn hàng không tồn tại!');
+                    throw new \Exception('Đơn hàng #' . $orderId . ' không tồn tại!');
                 }
 
                 if ((string) $donHang->trangthai_thanhtoan === 'DA_THANH_TOAN') {
                     return $maTraCuuQr;
                 }
 
-                // Kiểm tra nếu đã có qr_expires_at và thời điểm hiện tại đã vượt quá hạn 15 phút
                 if (!empty($donHang->qr_expires_at) && now()->greaterThan($donHang->qr_expires_at)) {
-                    $donHang->update([
+                    DonHang::where('madh', (int) $donHang->madh)->update([
                         'trangthai_donhang' => 'DA_HUY',
                     ]);
 
-                    throw new \Exception('Đơn hàng #' . $donHang->madh . ' đã quá thời hạn 15 phút (HUY), không thể ghi nhận thanh toán.');
+                    throw new \Exception('Đơn hàng #' . $donHang->madh . ' đã quá thời hạn 15 phút, không thể ghi nhận thanh toán.');
                 }
 
                 if ((string) $donHang->trangthai_donhang === 'DA_HUY') {
                     throw new \Exception('Đơn hàng #' . $donHang->madh . ' đang ở trạng thái DA_HUY.');
                 }
 
-                // Đối chiếu số tiền (amount: int -> float so với tongtien: double)
                 $soTienFloat  = (float) $amount;
                 $tongTienDon  = (float) $donHang->tongtien;
                 $noiDungCk    = $content;
@@ -214,11 +215,17 @@ class GiaoDichQRController extends Controller
                     throw new \Exception('Số tiền chi trả nhỏ hơn số tiền đơn hàng yêu cầu');
                 }
 
-                // Cập nhật trạng thái đơn hàng
-                $donHang->update([
+                $paidAt = now();
+                $updatedRows = DonHang::where('madh', (int) $donHang->madh)->update([
                     'trangthai_donhang'   => 'DA_XAC_NHAN',
                     'trangthai_thanhtoan' => 'DA_THANH_TOAN',
-                    'paid_at'             => now(),
+                    'paid_at'             => $paidAt,
+                ]);
+
+                Log::info('[VQR][transactionSync] Đã cập nhật đơn hàng', [
+                    'madh'         => (int) $donHang->madh,
+                    'updated_rows' => $updatedRows,
+                    'paid_at'      => (string) $paidAt,
                 ]);
 
                 // Trừ tồn kho sản phẩm theo từng dòng chitiet_donhang
