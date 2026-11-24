@@ -181,6 +181,19 @@ class GiaoDichQRController extends Controller
                     return $maTraCuuQr;
                 }
 
+                // Kiểm tra nếu đã có qr_expires_at và thời điểm hiện tại đã vượt quá hạn 15 phút
+                if (!empty($donHang->qr_expires_at) && now()->greaterThan($donHang->qr_expires_at)) {
+                    $donHang->update([
+                        'trangthai_donhang' => 'DA_HUY',
+                    ]);
+
+                    throw new \Exception('Đơn hàng #' . $donHang->madh . ' đã quá thời hạn 15 phút (HUY), không thể ghi nhận thanh toán.');
+                }
+
+                if ((string) $donHang->trangthai_donhang === 'DA_HUY') {
+                    throw new \Exception('Đơn hàng #' . $donHang->madh . ' đang ở trạng thái DA_HUY.');
+                }
+
                 // Đối chiếu số tiền (amount: int -> float so với tongtien: double)
                 $soTienFloat  = (float) $amount;
                 $tongTienDon  = (float) $donHang->tongtien;
@@ -205,6 +218,7 @@ class GiaoDichQRController extends Controller
                 $donHang->update([
                     'trangthai_donhang'   => 'DA_XAC_NHAN',
                     'trangthai_thanhtoan' => 'DA_THANH_TOAN',
+                    'paid_at'             => now(),
                 ]);
 
                 // Trừ tồn kho sản phẩm theo từng dòng chitiet_donhang

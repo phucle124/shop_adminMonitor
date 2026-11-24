@@ -183,7 +183,7 @@ class DonHangController extends Controller
         //Kiểm tra xem đã quá 15 phút chưa -> nếu quá thì tự chuyển đơn sang HUY
         $donHang = $this->syncExpiredOrderStatus($donHang);
 
-        if (($donHang->trangthai_donhang ?? '') === 'HUY') {
+        if (($donHang->trangthai_donhang ?? '') === 'DA_HUY') {
             return redirect()->back()->with('error', 'Đơn hàng #' . $donHang->madh . ' đã quá 15 phút nên bị hủy tự động.');
         }
 
