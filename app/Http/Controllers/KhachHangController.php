@@ -296,4 +296,46 @@ class KhachHangController extends Controller
         return redirect()->route('sanphamIntroduce.index',compact('ten_avatar'))->with('message', 'Đơn hàng đã hủy. Bạn được chuyển về trang "Products"');
     }
 
+    // Trong KhachHangController
+    public function kiemTraTrangThaiDonHang($madh) {
+        
+        $maKhachHang = session('ma_khach_hang');
+        if (!$maKhachHang) {
+            return response()->json(['authenticated' => false], 401);
+        }
+
+        $donHang = DonHang::where('madh', (int) $madh)
+            ->where('makh', (int) $maKhachHang)
+            ->first();
+
+        if (!$donHang) {
+            return response()->json(['found' => false], 404);
+        }
+
+        $isExpired = false;
+        if (
+            (string) $donHang->trangthai_thanhtoan !== 'DA_THANH_TOAN'
+            && !empty($donHang->qr_expires_at)
+            && now()->greaterThan($donHang->qr_expires_at)
+        ) {
+            $isExpired = true;
+            if ((string) $donHang->trangthai_donhang !== 'DA_HUY') {
+                DonHang::where('madh', (int) $donHang->madh)->update([
+                    'trangthai_donhang' => 'DA_HUY',
+                ]);
+                $donHang->refresh();
+            }
+        }
+
+        return response()->json([
+            'found'               => true,
+            'madh'                => (int) $donHang->madh,
+            'trangthai_thanhtoan' => $donHang->trangthai_thanhtoan,
+            'trangthai_donhang'   => $donHang->trangthai_donhang,
+            'paid_at'             => $donHang->paid_at ? (string) $donHang->paid_at : null,
+            'qr_expires_at'       => $donHang->qr_expires_at ? (string) $donHang->qr_expires_at : null,
+            'is_expired'          => $isExpired,
+        ]);
+    }
+
 }

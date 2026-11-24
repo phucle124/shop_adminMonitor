@@ -46,6 +46,7 @@ Route::post('/khach-hang/xac-nhan-don-hang',[KhachHangController::class, 'xacNha
 Route::post('/khach-hang/huy-don-hang',[KhachHangController::class,'HuyDatHang'])->name('donhangtmp.cancel');
 
 
+Route::get('/khach-hang/don-hang/{madh}/trang-thai', [KhachHangController::class, 'kiemTraTrangThaiDonHang'])->name('khachhang.donhang.trang-thai');
 
 Route::prefix('vqr')->group(function (){
 
