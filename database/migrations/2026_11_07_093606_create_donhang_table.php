@@ -22,7 +22,7 @@ return new class extends Migration
             //Thêm 3 cột  => phục vụ timer 15ph đếm ngược
             $table->dateTime('qr_created_at')->nullable()->default(null);
             $table->dateTime('qr_expired_at')->nullable()->default(null);
-            $table->dateTime('qr_paid_at')->nullable()->default(null);
+            $table->dateTime('paid_at')->nullable()->default(null);
             
             $table->timestamps();
         });

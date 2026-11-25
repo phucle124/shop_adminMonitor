@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class LogTrangThai extends Model
 {
     // Tên bảng tương ứng trong DB (nếu khác chuẩn)
-    protected $table = 'log_tranthai';
+    protected $table = 'log_trangthai';
 
     // Khóa chính của bảng (Mặc định là id)
     protected $primaryKey = 'malog_tt';
