@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Route;
 
 
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
-});
+// Route::middleware(['auth', 'verified'])->group(function () {
+//     Route::view('dashboard', 'dashboard')->name('dashboard');
+// });
 
 require __DIR__.'/settings.php';
 
@@ -25,13 +25,7 @@ $adminDomain = env('ADMIN_DOMAIN', 'admin.test');
  Trang mua hàng & VietQR (Domain Khách hàng)
 
 */
-Route::domain($shopDomain)->group(function () {
-    Route::middleware(['auth', 'verified'])->group(function () {
-        Route::view('dashboard', 'dashboard')->name('dashboard');
-    });
-
-    require __DIR__.'/settings.php';
-
+$registerShopRoutes = function () {
     // Khách đăng ký
     Route::get('register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('register', [AuthController::class, 'register'])->name('register.post');
@@ -68,25 +62,29 @@ Route::domain($shopDomain)->group(function () {
         Route::post('/bank/api/transaction-sync', [GiaoDichQRController::class, 'transactionSync'])->name('vqr.transaction.sync');
         Route::post('/bank/api/test/transaction-callback', [GiaoDichQRController::class, 'testTransactionCallback'])->name('vqr.callback.test');
     });
-});
+};
 
-
-
-/*
-
- Trang giám sát / Quản trị viên (Domain Admin)
-
-*/
-Route::domain($adminDomain)->group(function () {
-    
+$registerAdminRoutes = function () {
     Route::get('/login', [AuthController::class, 'showLogin_Admin'])->name('admin.login');
     Route::post('/login', [AuthController::class, 'login_Admin'])->name('admin.login.post');
-
     Route::post('/logout', [AuthController::class, 'logout_Admin'])->name('admin.logout');
 
     Route::middleware('admin.auth')->group(function () {
         Route::get('/', [LogTrangThaiController::class, 'adminIndex'])->name('Admin.index');
         Route::get('/index', [LogTrangThaiController::class, 'adminIndex']);
     });
-});
+};
 
+$shopDomain  = env('SHOP_DOMAIN');
+$adminDomain = env('ADMIN_DOMAIN');
+
+if ($shopDomain && $adminDomain) {
+    Route::domain($shopDomain)->group($registerShopRoutes);
+    Route::domain($adminDomain)->group($registerAdminRoutes);
+} else {
+    $registerShopRoutes();
+
+    Route::prefix('admin')->group(function () use ($registerAdminRoutes) {
+        $registerAdminRoutes();
+    });
+}
