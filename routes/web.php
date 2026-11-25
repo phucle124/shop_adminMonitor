@@ -9,20 +9,8 @@ use App\Http\Controllers\SanPhamController;
 use App\Http\Controllers\VietQrAuthController;
 use Illuminate\Support\Facades\Route;
 
-
-
-// Route::middleware(['auth', 'verified'])->group(function () {
-//     Route::view('dashboard', 'dashboard')->name('dashboard');
-// });
-
 require __DIR__.'/settings.php';
 
-
-/*
-
- Trang mua hàng & VietQR (Domain Khách hàng)
-
-*/
 $registerShopRoutes = function () {
     // Khách đăng ký
     Route::get('register', [AuthController::class, 'showRegister'])->name('register');
