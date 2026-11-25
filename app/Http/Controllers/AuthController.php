@@ -170,7 +170,7 @@ class AuthController extends Controller
             return redirect()->route('Admin.index');
         }
 
-        return view('AdminView.login');
+        return view('authentications.loginAdmin');
     }
 
     public function login_Admin(Request $request)

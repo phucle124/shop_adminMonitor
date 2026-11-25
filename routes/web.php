@@ -17,8 +17,6 @@ use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/settings.php';
 
-$shopDomain  = env('SHOP_DOMAIN', 'shop.test');
-$adminDomain = env('ADMIN_DOMAIN', 'admin.test');
 
 /*
 
