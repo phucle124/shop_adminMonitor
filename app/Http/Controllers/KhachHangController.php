@@ -126,7 +126,7 @@ class KhachHangController extends Controller
 
         $donhangtmp = session('don_hang_tam');
         if (!$donhangtmp || empty($donhangtmp['khach_hang']) || empty($donhangtmp['san_pham'])) {
-            return redirect()->route('home')->with('error', 'Không tìm thấy dữ liệu đơn hàng tạm trong phiên làm việc!');
+            return redirect()->route('KhachHang.index')->with('error', 'Không tìm thấy dữ liệu đơn hàng tạm trong phiên làm việc!');
         }
 
         $donhangtmp_KH = $donhangtmp['khach_hang'];
