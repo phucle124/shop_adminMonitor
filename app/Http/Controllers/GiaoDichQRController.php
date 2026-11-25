@@ -154,27 +154,7 @@ class GiaoDichQRController extends Controller
                     'orderId_raw' => $rawOrderId,
                 ]);
 
-                // 2. Xác định mã đơn hàng (madh)
-                if ($rawOrderId !== '' && is_numeric($rawOrderId)) {
-                    $orderId = (int) $rawOrderId;
-                } elseif (preg_match('/(\d{4,})/', $rawContent, $m)) {
-                    $orderId = (int) $m[1];
-                } else {
-                    // Fallback nếu content là chuỗi test mặc định (ví dụ "VQR... Test Qr") không chứa số madh
-                    $latestPending = DonHang::where('trangthai_thanhtoan', '!=', 'DA_THANH_TOAN')
-                        ->where(function ($q) {
-                            $q->whereNull('trangthai_donhang')
-                            ->orWhere('trangthai_donhang', '!=', 'DA_HUY');
-                        })
-                        ->where(function ($q) {
-                            $q->whereNull('qr_expires_at')
-                            ->orWhere('qr_expires_at', '>=', now());
-                        })
-                        ->orderByDesc('madh')
-                        ->first();
-
-                    $orderId = $latestPending ? (int) $latestPending->madh : 0;
-                }
+                $orderId = $rawOrderId;
 
                 $amount          = (int) ($data['amount'] ?? $callback->amount ?? 0);
                 $transType       = strtoupper((string) ($data['transType'] ?? $callback->transType ?? 'C'));
@@ -233,6 +213,15 @@ class GiaoDichQRController extends Controller
                         'madh'          => (int) $donHang->madh,
                     ]);
 
+
+                    // Ghi log giao dịch VietQR
+                    app(LogTrangThaiController::class)->ghiLogTrangThai(
+                        $maTraCuuQr,
+                        'GIAO_DICH_QR',
+                        $donhang->trangthai_donhang ?? null,
+                        'FAILED',
+                    );
+
                     throw new \Exception('Số tiền chi trả nhỏ hơn số tiền đơn hàng yêu cầu');
                 }
 
@@ -272,6 +261,23 @@ class GiaoDichQRController extends Controller
                     'trang_thai_qr' => 'SUCCESS',
                     'madh'          => (int) $donHang->madh,
                 ]);
+
+                // Ghi log giao dịch VietQR
+                if ($maTraCuuQr) {
+                    app(LogTrangThaiController::class)->ghiLogTrangThai(
+                        $maTraCuuQr,
+                        'GIAO_DICH_QR',
+                        'DA_XAC_NHAN',
+                        'SUCCESS'
+                    );
+                }
+
+                app(LogTrangThaiController::class)->ghiLogTrangThai(
+                    (string) $donHang->madh,
+                    'DON_HANG',
+                    'DA_XAC_NHAN',
+                    'DA_THANH_TOAN'
+                );
 
                 return $maTraCuuQr ?? 'GeneratedRefTransactionId';
             });

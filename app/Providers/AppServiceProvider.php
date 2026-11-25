@@ -2,16 +2,21 @@
 
 namespace App\Providers;
 
+use App\Services\ProvinceService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
+
+
 class AppServiceProvider extends ServiceProvider
 {
+   
     /**
      * Register any application services.
      */
@@ -31,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production') || str_starts_with((string)config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
+
+        View::composer('authentications.register', function ($view) {
+            $view->with('provinces', app(ProvinceService::class)->getAllProvinces());
+        });
     }
 
     /**

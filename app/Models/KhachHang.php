@@ -20,6 +20,8 @@ class KhachHang extends Model
         'sdt',
         'matkhau',
         'gioitinh',
+        'province_code',
+        'province_name',
     ];
 
     // Các cột muốn ẩn khi chuyển sang JSON/Array (Mật khẩu, token...)

@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('matkhau',100);
             $table->string('diachi',100)->nullable();
             $table->enum('gioitinh',['NAM','NU'])->nullable();
+            $table->integer('province_code')->nullable();
+            $table->string('province_name', 120)->nullable();
             $table->timestamps();
         });
     }

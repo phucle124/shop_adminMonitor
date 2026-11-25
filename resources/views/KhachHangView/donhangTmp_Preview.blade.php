@@ -8,17 +8,37 @@
    
 </head>
 <body>
+    @php
+        $displayName = $ten_avatar ?? session('ten_khach_hang');
+    @endphp
+
     <header>
         <div class="header-bar-container">
             <a href="{{ route('KhachHang.index') }}">
                 <span class="shop-name">DeviceShop</span>
             </a>
-            <div class="profile-container">
-                <img src="{{ asset('storage/avatar_icon/iconMale.svg') }}" alt="Avatar">
-                <span class="avatar-name">{{ $donhang['khach_hang']['ten_khach_hang'] ?? session('ten_khach_hang') }}</span>
+
+            <div class="profile-dropdown">
+                <button type="button" class="profile-trigger">
+                    <div class="profile-container">
+                        <img src="{{ asset('storage/avatar_icon/iconMale.svg') }}" alt="{{ $displayName }}">
+                        <span class="avatar-name">{{ $displayName }}</span>
+                    </div>
+                </button>
+
+                <div class="profile-dropdown-menu">
+                    <form action="{{ route('KhachHang.logout') }}" method="POST" class="profile-logout-form">
+                        @csrf
+                        <button type="submit" class="profile-logout-btn">
+                            Đăng xuất
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </header>
+
+    
 
     <div class="checkout-container">
         <h1>Xem Lại Đơn Hàng Tạm Thời</h1>

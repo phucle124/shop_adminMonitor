@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DonHangController;
 use App\Http\Controllers\GiaoDichQRController;
 use App\Http\Controllers\KhachHangController;
+use App\Http\Controllers\LogTrangThaiController;
 use App\Http\Controllers\SanPhamController;
 use App\Http\Controllers\VietQrAuthController;
 use Illuminate\Support\Facades\Route;
@@ -17,7 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 require __DIR__.'/settings.php';
 
 //Khách đăng ký
-Route::get('register', [AuthController::class,'showRegister']);
+Route::get('register', [AuthController::class,'showRegister'])->name('register');
 Route::post('register', [AuthController::class, 'register'])->name('register.post');
 
 //Khách đăng nhập
@@ -25,28 +26,36 @@ Route::get('login', [AuthController::class, 'showLogin_Khach'])->name('login');
 Route::post('login',[AuthController::class, 'login_Khach'])->name('login.post');
 
 
-//index Khách (Cần thêm middleware Check session('ma_khach_hang'))
-Route::get('/',[KhachHangController::class,'index'])->name('KhachHang.index');
 
 
-//Product
-Route::get('/products',[SanPhamController::class, 'index'])->name('sanphamIntroduce.index');
 
-Route::get('/productNormal',[SanPhamController::class,'indexNormal'])->name('sanpham1.index');
-Route::get('/productSpecial',[SanPhamController::class,'indexSpecial'])->name('sanpham2.index');
+Route::middleware('khach.auth')->group(function () {
 
-Route::get('/productDetails/{masp}',[SanPhamController::class,'show'])->name('sanpham.show');
+    //Trang index
+    Route::get('/',[KhachHangController::class,'index'])->name('KhachHang.index');
 
-Route::post('/khach-hang/tao-donhang-tmp', [KhachHangController::class,'DonHangTmp'])->name('donhangtmp.post');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('KhachHang.logout');
 
-Route::get('/khach-hang/xem-lai-don-hang', [KhachHangController::class, 'xemLaiDonHang'])->name('donhangtmp.preview');
+    //Product
+    Route::get('/products',[SanPhamController::class, 'index'])->name('sanphamIntroduce.index');
 
-Route::post('/khach-hang/xac-nhan-don-hang',[KhachHangController::class, 'xacNhanDatHang'])->name('donhang.confirm');
+    Route::get('/productNormal',[SanPhamController::class,'indexNormal'])->name('sanpham1.index');
+    Route::get('/productSpecial',[SanPhamController::class,'indexSpecial'])->name('sanpham2.index');
 
-Route::post('/khach-hang/huy-don-hang',[KhachHangController::class,'HuyDatHang'])->name('donhangtmp.cancel');
+    Route::get('/productDetails/{masp}',[SanPhamController::class,'show'])->name('sanpham.show');
+
+    Route::post('/khach-hang/tao-donhang-tmp', [KhachHangController::class,'DonHangTmp'])->name('donhangtmp.post');
+
+    Route::get('/khach-hang/xem-lai-don-hang', [KhachHangController::class, 'xemLaiDonHang'])->name('donhangtmp.preview');
+
+    Route::post('/khach-hang/xac-nhan-don-hang',[KhachHangController::class, 'xacNhanDatHang'])->name('donhang.confirm');
+
+    Route::post('/khach-hang/huy-don-hang',[KhachHangController::class,'HuyDatHang'])->name('donhangtmp.cancel');
 
 
-Route::get('/khach-hang/don-hang/{madh}/trang-thai', [KhachHangController::class, 'kiemTraTrangThaiDonHang'])->name('khachhang.donhang.trang-thai');
+    Route::get('/khach-hang/don-hang/{madh}/trang-thai', [KhachHangController::class, 'kiemTraTrangThaiDonHang'])->name('khachhang.donhang.trang-thai');
+
+});
 
 Route::prefix('vqr')->group(function (){
 
@@ -62,11 +71,11 @@ Route::prefix('vqr')->group(function (){
 });
 
 
-Route::get('/don-hang/check-status/{madh}', [GiaoDichQRController::class, 'checkPaymentStatus'])->name('donhang.check-status');
+// Route::get('/don-hang/check-status/{madh}', [GiaoDichQRController::class, 'checkPaymentStatus'])->name('donhang.check-status');
 
-Route::get('/don-hang/thanh-cong/{madh}', function ($madh) {
-    return view('KhachHangView.PaymentSuccess', compact('madh'));
-})->name('donhang.thanhcong');
+// Route::get('/don-hang/thanh-cong/{madh}', function ($madh) {
+//     return view('KhachHangView.PaymentSuccess', compact('madh'));
+// })->name('donhang.thanhcong');
 
 
 //Dơn hàng
@@ -77,6 +86,14 @@ Route::post('/don-hang/create', [DonHangController::class,'buyNow'])->name('donh
 // Route::get('login', [AuthController::class, 'showLogin_Admin']);
 // Route::post('login', [AuthController::class, 'login_Admin'])->name('admin_login.post');
 
-//index Quản trị viên
-Route::view('index','AdminView.index')->name('Admin.index');
+//Quản trị viên
+Route::prefix('admin')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin_Admin'])->name('admin.login');
+    Route::post('/login', [AuthController::class, 'login_Admin'])->name('admin.login.post');
+    Route::post('/logout', [AuthController::class, 'logout_Admin'])->name('admin.logout');
+
+    Route::middleware('admin.auth')->group(function () {
+        Route::get('/index', [LogTrangThaiController::class, 'adminIndex'])->name('Admin.index');
+    });
+});
 

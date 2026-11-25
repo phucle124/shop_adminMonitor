@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\AdminAuthMiddleware;
+use App\Http\Middleware\EnsureKhachHangAuthenticated;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,16 +15,25 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         //
+        //Bỏ cơ chế kiểm tra CSRF do chặn URL bắt đầu bằng vqr/...
+        $middleware->validateCsrfTokens(except: [
+            'vqr/*',
+        ]);
+
+        $middleware->alias([
+            'khach.auth' => EnsureKhachHangAuthenticated::class,
+            'admin.auth' => AdminAuthMiddleware::class,
+        ]);
+
+     
     })
+    
+
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })
 
-    //Bỏ cơ chế kiểm tra CSRF do chặn URL bắt đầu bằng vqr/...
-    ->withMiddleware(function (Middleware $middleware) {
-        $middleware->validateCsrfTokens(except: [
-            'vqr/*',
-        ]);
-    })->create();
+    ->create();
+    

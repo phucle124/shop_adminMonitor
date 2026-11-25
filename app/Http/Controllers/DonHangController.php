@@ -112,6 +112,8 @@ class DonHangController extends Controller
                     'trangthai_thanhtoan' => 'CHUA_THANH_TOAN',
                 ]);
 
+                
+
                 $donhang->chitiet_donhangs()->create([
                     'giaban'      => $sp->dongia,
                     'soluong_mua' => $sl_Mua,
@@ -119,11 +121,21 @@ class DonHangController extends Controller
                     'masp'        => $sp->masp,
                 ]);
 
+                // Ghi log đơn hàng
+                app(LogTrangThaiController::class)->ghiLogTrangThai(
+                    (string)$donhang->madh,
+                    'DON_HANG',
+                    'CHO_XAC_NHAN',
+                    'CHUA_THANH_TOAN',
+                );
+
                 return $donhang;
             });
 
             // Lưu madh vừa tạo vào session để caller nội bộ lấy được ngay cả khi return redirect
             session(['madh_vua_tao' => $donhang->madh]);
+
+            
 
 
             //PHẢI TRẢ mã đơn hàng mã phía
@@ -155,6 +167,15 @@ class DonHangController extends Controller
                     if(now()->greaterThanOrEqualTo($qrExpires_at)){
                         $donHang->update(['trangthai_donhang' => 'DA_HUY']);
                         $donHang->refresh();
+
+
+                        // Ghi log đơn hàng
+                        app(LogTrangThaiController::class)->ghiLogTrangThai(
+                            (string)$donHang->madh,
+                            'DON_HANG',
+                            $donHang->trangthai_donhang,
+                            $donHang->trangthai_thanhtoan,
+                        );
                     }
                 }
             }
@@ -221,9 +242,23 @@ class DonHangController extends Controller
 
             // Thông báo kết quả quay lại màn hình hiện tại
             if ($trangThai === 'SUCCESS') {
+
+                // Ghi log đơn hàng
+                app(LogTrangThaiController::class)->ghiLogTrangThai(
+                    session('madh_vua_tao'),
+                    'DON_HANG',
+                    $donHang->tranthai_donhang,
+                    $donHang->trangthai_thanhtoan,
+                );
+
                 return redirect()->back()->with('success', 'Đã gửi giả lập thanh toán cho đơn #' . $donHang->madh);
+             
+               
             } else {
                 $loi = (string) ($ketQua['message'] ?? 'Lỗi không xác định');
+
+                
+
                 return redirect()->back()->with('error', 'Giả lập thanh toán thất bại: ' . $loi);
             }
         } catch (\Exception $e) {
