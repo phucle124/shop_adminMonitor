@@ -102,25 +102,25 @@ class VietQrAuthController extends Controller
     }
 
 
-    // public function tokenGenerate(){
-    //     try {
-    //         $token = $this->getVietQrAccessToken();
+    public function tokenGenerate(){
+        try {
+            $token = $this->getVietQrAccessToken();
 
-    //         return response()->json([
-    //                 'access_token' => $token,
-    //                 'token_type' => 'Bearer',
-    //                 'expires_in' => 300,
+            return response()->json([
+                    'access_token' => $token,
+                    'token_type' => 'Bearer',
+                    'expires_in' => 300,
 
-    //         ], 200);
-    //     } catch (Exception $e) {
-    //         Log::error('Lỗi lấy token từ VietQR: ' . $e->getMessage());
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Lỗi lấy token từ VietQR: ' . $e->getMessage());
 
-    //         return response()->json([
-    //             'error'        => true,
-    //             'message' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
+            return response()->json([
+                'error'        => true,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
    
     
 }
