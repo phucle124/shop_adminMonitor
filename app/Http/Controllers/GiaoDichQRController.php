@@ -153,9 +153,13 @@ class GiaoDichQRController extends Controller
 
                 if (ctype_digit($rawOrderId)) {
                     $orderId = (int) $rawOrderId;
-                } elseif (strtoupper($rawOrderId) === 'DHTEST') {
+                } elseif ($rawOrderId === '' || strtoupper($rawOrderId) === 'DHTEST') {
                     $orderId = (int) (DonHang::where('trangthai_thanhtoan', '!=', 'DA_THANH_TOAN')
                         ->where('trangthai_donhang', '!=', 'DA_HUY')
+                        ->where(function ($q) {
+                            $q->whereNull('qr_expires_at')
+                            ->orWhere('qr_expires_at', '>', now());
+                        })
                         ->orderByDesc('madh')
                         ->value('madh') ?? 0);
                 }
