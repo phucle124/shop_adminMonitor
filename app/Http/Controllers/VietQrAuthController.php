@@ -14,8 +14,10 @@ class VietQrAuthController extends Controller
 {
     //
     //Lấy token từ api của VietQR với method POST
-    public function getVietQrAccessToken(): string 
-    {
+    public function getVietQrAccessToken(): string {
+
+        Cache::forget('vietqr_access_token');
+
         return Cache::remember('vietqr_access_token', now()->addMinutes(50), function () {
             $username = env('VIETQR_AUTH_USERNAME'); //'customer-deviceshop-user26728';
             $password = env('VIETQR_AUTH_PASSWORD'); //'Y3VzdG9tZXItZGV2aWNlc2hvcC11c2VyMjY3Mjg=';
@@ -36,8 +38,8 @@ class VietQrAuthController extends Controller
                 throw new Exception('Lấy token VietQR thất bại (HTTP ' . $response->status() . ')');
             }
 
-            $data = $response->json();
-            $token = $data['access_token']; //?? data_get($data, 'data.access_token');
+            $data = $response->json() ?? [];
+            $token = $data['access_token'] ?? data_get($data, 'data.access_token');
 
             if (empty($token)) {
                 throw new Exception('Không tìm thấy access_token trong phản hồi của VietQR');
@@ -63,7 +65,7 @@ class VietQrAuthController extends Controller
             'qrType'       => (int) $request->input('qrType', 0),
             'orderId'      => $request->input('orderId', 'DHtest'),
             'transType'    => $request->input('transType', 'C'),
-            'urlLink'      => $request->input('urlLink', 'https://shop-adminmonitor.onrender.com/products'),
+            // 'urlLink'      => $request->input('urlLink', 'https://shop-adminmonitor.onrender.com/products'),
         ];
 
         try {
@@ -100,25 +102,25 @@ class VietQrAuthController extends Controller
     }
 
 
-    public function tokenGenerate(){
-        try {
-            $token = $this->getVietQrAccessToken();
+    // public function tokenGenerate(){
+    //     try {
+    //         $token = $this->getVietQrAccessToken();
 
-            return response()->json([
-                    'access_token' => $token,
-                    'token_type' => 'Bearer',
-                    'expires_in' => 300,
+    //         return response()->json([
+    //                 'access_token' => $token,
+    //                 'token_type' => 'Bearer',
+    //                 'expires_in' => 300,
 
-            ], 200);
-        } catch (Exception $e) {
-            Log::error('Lỗi lấy token từ VietQR: ' . $e->getMessage());
+    //         ], 200);
+    //     } catch (Exception $e) {
+    //         Log::error('Lỗi lấy token từ VietQR: ' . $e->getMessage());
 
-            return response()->json([
-                'error'        => true,
-                'message' => $e->getMessage(),
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'error'        => true,
+    //             'message' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
    
     
 }

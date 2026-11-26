@@ -144,19 +144,20 @@ class GiaoDichQRController extends Controller
         $callback = new TransactionCallback($data);
 
         try {
-            $refTransactionId = DB::transaction(function () use ($callback) {
+            $refTransactionId = DB::transaction(function () use ($callback, $data) {
                 // Chuẩn hóa kiểu dữ liệu theo đặc tả VietQR & schema DB
                 $rawContent = (string) ($data['content'] ?? $callback->content ?? '');
                 $rawOrderId = trim((string) ($data['orderId'] ?? $callback->orderId ?? ''));
 
+                $orderId = ctype_digit($rawOrderId) ? (int) $rawOrderId : 0;
+                $amount  = (int) ($data['amount'] ?? $callback->amount ?? 0);
+
                 Log::info('[VQR][transactionSync] Raw content từ VietQR', [
                     'content_raw' => $rawContent,
                     'orderId_raw' => $rawOrderId,
+                    'orderId_int' => $orderId,
                 ]);
 
-                $orderId = $rawOrderId;
-
-                $amount          = (int) ($data['amount'] ?? $callback->amount ?? 0);
                 $transType       = strtoupper((string) ($data['transType'] ?? $callback->transType ?? 'C'));
                 $bankAccount     = (string) ($data['bankaccount'] ?? $callback->bankaccount ?? '');
                 $transactionId   = (string) ($data['transactionid'] ?? $callback->transactionid ?? '');
@@ -169,7 +170,9 @@ class GiaoDichQRController extends Controller
                     : ($referenceNumber !== '' ? $referenceNumber : null);
 
                 if ($orderId <= 0 || $amount <= 0) {
-                    throw new \Exception('Mã đơn hàng (madh) hoặc số tiền chuyển khoản QR không hợp lệ (orderId=' . $orderId . ', amount=' . $amount . ')');
+                    throw new \Exception(
+                        'Mã đơn hàng (madh) hoặc số tiền chuyển khoản QR không hợp lệ (orderId=' . $rawOrderId . ', amount=' . $amount . ')'
+                    );
                 }
 
                 $donHang = DonHang::with('chitiet_donhangs')
@@ -213,12 +216,11 @@ class GiaoDichQRController extends Controller
                         'madh'          => (int) $donHang->madh,
                     ]);
 
-
                     // Ghi log giao dịch VietQR
                     app(LogTrangThaiController::class)->ghiLogTrangThai(
                         $maTraCuuQr,
                         'GIAO_DICH_QR',
-                        $donhang->trangthai_donhang ?? null,
+                        $donHang->trangthai_donhang ?? null,
                         'FAILED',
                     );
 
@@ -327,15 +329,17 @@ class GiaoDichQRController extends Controller
 
 
 
-    public function testTransactionCallback(Request $request){
+    public function testTransactionCallback(Request $request, VietQrAuthController $VqrAuthController){
         try {
-            $accessToken = Cache::get('vietqr_access_token');
+            // $accessToken = Cache::get('vietqr_access_token');
+            $accessToken = $VqrAuthController->getVietQrAccessToken();
 
             $info = [
                 'bankAccount' => (string) $request->input('bankAccount', ''),
                 'content'     => (string) $request->input('content', ''),
                 'amount'      => (string) $request->input('amount', ''),
                 'bankCode'    => (string) $request->input('bankCode', ''),
+                'orderId'     => (string) $request->input('orderId', ''),
                 'transType'   => 'C',
             ];
 
