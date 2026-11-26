@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DonHangController;
 use App\Http\Controllers\GiaoDichQRController;
 use App\Http\Controllers\KhachHangController;
+use App\Http\Controllers\Admin\LogExportController;
 use App\Http\Controllers\LogTrangThaiController;
 use App\Http\Controllers\SanPhamController;
 use App\Http\Controllers\VietQrAuthController;
@@ -57,5 +58,6 @@ Route::prefix('admin')->group(function () {
     Route::middleware('admin.auth')->group(function () {
         Route::get('/', [LogTrangThaiController::class, 'adminIndex'])->name('Admin.index');
         Route::get('/index', [LogTrangThaiController::class, 'adminIndex']);
+        Route::get('/logs/export', [LogExportController::class, 'export'])->name('logs.export');
     });
 });

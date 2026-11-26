@@ -89,7 +89,6 @@ class TransactionResponseObject{
     }
 }
 
-
 /*Chiều từ VietQR đổ về*/
 class GiaoDichQRController extends Controller
 {

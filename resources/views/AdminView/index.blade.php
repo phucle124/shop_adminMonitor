@@ -78,6 +78,8 @@
 
                         <button type="submit" class="btn-filter">Lọc dữ liệu</button>
                         <a href="{{ route('Admin.index') }}" class="btn-reset">Xóa lọc</a>
+
+                        <a href="{{ route('logs.export', request()->only(['loai', 'ma', 'from', 'to'])) }}" class="btn-filter">Xuất CSV </a>
                     </form>
 
                     <div class="table-wrap">
