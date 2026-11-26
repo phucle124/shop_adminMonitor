@@ -19,7 +19,7 @@ Route::post('register', [AuthController::class, 'register'])->name('register.pos
 Route::get('login', [AuthController::class, 'showLogin_Khach'])->name('login');
 Route::post('login', [AuthController::class, 'login_Khach'])->name('login.post');
 
-Route::middleware('khach.auth')->group(function () {
+// Route::middleware('khach.auth')->group(function () {
     // Trang index
     Route::get('/', [KhachHangController::class, 'index'])->name('KhachHang.index');
 
@@ -37,7 +37,7 @@ Route::middleware('khach.auth')->group(function () {
     Route::post('/khach-hang/xac-nhan-don-hang', [KhachHangController::class, 'xacNhanDatHang'])->name('donhang.confirm');
     Route::post('/khach-hang/huy-don-hang', [KhachHangController::class, 'HuyDatHang'])->name('donhangtmp.cancel');
     Route::get('/khach-hang/don-hang/{madh}/trang-thai', [KhachHangController::class, 'kiemTraTrangThaiDonHang'])->name('khachhang.donhang.trang-thai');
-});
+// });
 
 Route::post('/don-hang/create', [DonHangController::class, 'buyNow'])->name('donhang.buy-now');
 
