@@ -149,7 +149,17 @@ class GiaoDichQRController extends Controller
                 $rawContent = (string) ($data['content'] ?? $callback->content ?? '');
                 $rawOrderId = trim((string) ($data['orderId'] ?? $callback->orderId ?? ''));
 
-                $orderId = ctype_digit($rawOrderId) ? (int) $rawOrderId : 0;
+                $orderId = 0;
+
+                if (ctype_digit($rawOrderId)) {
+                    $orderId = (int) $rawOrderId;
+                } elseif (strtoupper($rawOrderId) === 'DHTEST') {
+                    $orderId = (int) (DonHang::where('trangthai_thanhtoan', '!=', 'DA_THANH_TOAN')
+                        ->where('trangthai_donhang', '!=', 'DA_HUY')
+                        ->orderByDesc('madh')
+                        ->value('madh') ?? 0);
+                }
+
                 $amount  = (int) ($data['amount'] ?? $callback->amount ?? 0);
 
                 Log::info('[VQR][transactionSync] Raw content từ VietQR', [
