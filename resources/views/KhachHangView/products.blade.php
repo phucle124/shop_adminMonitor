@@ -9,7 +9,8 @@
 </head>
 <body class="page-wrapper">
     @php
-        $displayName = $ten_avatar ?? session('ten_khach_hang');
+        $displayName = session('ten_khach_hang');
+        $isLogin = !empty($displayName);
     @endphp
 
     <header>
@@ -18,23 +19,30 @@
                 <span class="shop-name">DeviceShop</span>
             </a>
 
-            <div class="profile-dropdown">
-                <button type="button" class="profile-trigger">
-                    <div class="profile-container">
-                        <img src="{{ asset('storage/avatar_icon/iconMale.svg') }}" alt="{{ $displayName }}">
-                        <span class="avatar-name">{{ $displayName }}</span>
-                    </div>
-                </button>
+            @if ($isLogin)
+                <div class="profile-dropdown">
+                    <button type="button" class="profile-trigger">
+                        <div class="profile-container">
+                            <img src="{{ asset('storage/avatar_icon/iconMale.svg') }}" alt="{{ $displayName ?? 'Khách hàng' }}">
+                            <span class="avatar-name">{{ $displayName ?? 'Khách hàng' }}</span>
+                        </div>
+                    </button>
 
-                <div class="profile-dropdown-menu">
-                    <form action="{{ route('KhachHang.logout') }}" method="POST" class="profile-logout-form">
-                        @csrf
-                        <button type="submit" class="profile-logout-btn">
-                            Đăng xuất
-                        </button>
-                    </form>
+                    <div class="profile-dropdown-menu">
+                        <form action="{{ route('KhachHang.logout') }}" method="POST" class="profile-logout-form">
+                            @csrf
+                            <button type="submit" class="profile-logout-btn">
+                                Đăng xuất
+                            </button>
+                        </form>
+                    </div>
                 </div>
-            </div>
+            @else
+                <div class="auth-header-actions">
+                    <a href="{{ route('register') }}" class="header-auth-btn header-register-btn">Đăng ký</a>
+                    <a href="{{ route('login') }}" class="header-auth-btn header-login-btn">Đăng nhập</a>
+                </div>
+            @endif
         </div>
     </header>
 
