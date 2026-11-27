@@ -7,7 +7,7 @@
     <title>Sản phẩm phổ thông</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 </head>
-<body>
+<body class="productnormal-body">
     @php
         $displayName = $ten_avatar ?? session('ten_khach_hang');
     @endphp
@@ -48,17 +48,17 @@
             </ul>
         </nav>
     </div>
-    <h1 class="page-title" style="color: #3C86FF;">Phân Khúc Phổ Thông</h1>
+    <h2 class="page-productnormal-title" style="color: blue">Phân Khúc Phổ Thông</h2>
 
     <div class="product-grid">
        
         @foreach ($dssp1 as $sp)
             <div class="product-card">
                 <a href="{{ route('sanpham.show', ['masp' => $sp->masp]) }}">
-                    <img class="product-img" src="{{ asset('storage/ . $sp->hinh') }}" >
+                    <img class="product-img" src="{{ asset('storage/' . $sp->hinh) }}" >
                     <h2 class="tensp">{{ $sp->tensp }}</h2>
                     <p class="don-gia">{{ $sp->dongia }}</p>
-                    <hr>
+             
                 </a>
             </div>
         @endforeach
