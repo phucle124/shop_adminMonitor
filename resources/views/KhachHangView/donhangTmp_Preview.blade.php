@@ -174,6 +174,24 @@
                             style="width: 100%; padding: 10px 14px; background: #0f172a; color: #ffffff; font-weight: 600; font-size: 14px; border: 0; border-radius: 8px; cursor: pointer;">
                         Tôi đã chuyển khoản — Kiểm tra trạng thái
                     </button>
+
+                    <form id="formTestVqrCallback"
+                          action="{{ route('vqr.callbacl.test') }}"
+                          method="POST"
+                          style="margin-top: 8px;">
+                        @csrf
+                        <input type="hidden" name="bankAccount" value="{{ $qrInfo['bankAccount'] ?? '' }}">
+                        <input type="hidden" name="content" value="{{ $qrInfo['content'] ?? (string) $donHang->madh }}">
+                        <input type="hidden" name="amount" value="{{ (string) ((int) round((float) ($qrInfo['amount'] ?? $donHang->tongtien))) }}">
+                        <input type="hidden" name="bankCode" value="{{ $qrInfo['bankCode'] ?? '' }}">
+                        <input type="hidden" name="orderId" value="{{ (string) $donHang->madh }}">
+
+                        <button type="submit"
+                                id="btnTestVqrCallback"
+                                style="width: 100%; padding: 10px 14px; background: #059669; color: #ffffff; font-weight: 600; font-size: 14px; border: 0; border-radius: 8px; cursor: pointer;">
+                            Test Callback VietQR (SUCCESS)
+                        </button>
+                    </form>
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
@@ -188,84 +206,171 @@
 
         <script>
             document.addEventListener('DOMContentLoaded', function () {
-                const panel = document.getElementById('qrPaymentPanel');
-                if (!panel) return;
+            const panel = document.getElementById('qrPaymentPanel');
+            if (!panel) return;
 
-                const statusUrl = panel.dataset.statusUrl;
-                const expiresAtRaw = panel.dataset.expiresAt;
-                const countdownEl = document.getElementById('qrCountdown');
-                const statusTextEl = document.getElementById('liveOrderStatusText');
-                const checkBtn = document.getElementById('btnCheckPaymentStatus');
+            const statusUrl = panel.dataset.statusUrl;
+            const expiresAtRaw = panel.dataset.expiresAt;
+            const countdownEl = document.getElementById('qrCountdown');
+            const statusTextEl = document.getElementById('liveOrderStatusText');
+            const checkBtn = document.getElementById('btnCheckPaymentStatus');
 
-                let pollTimer = null;
-                let countdownTimer = null;
+            const testCallbackForm = document.getElementById('formTestVqrCallback');
+            const testCallbackBtn = document.getElementById('btnTestVqrCallback');
 
-                async function checkStatus(manual = false) {
-                    try {
-                        if (manual && checkBtn) {
-                            checkBtn.disabled = true;
-                            checkBtn.textContent = 'Đang kiểm tra thanh toán...';
+            let pollTimer = null;
+            let countdownTimer = null;
+            let isFinished = false;
+
+            function stopAllTimers() {
+                if (pollTimer !== null) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+                if (countdownTimer !== null) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                }
+            }
+
+            function formatCountdown(targetTime) {
+                const diffMs = targetTime - Date.now();
+                if (diffMs <= 0) return '00:00';
+                const totalSec = Math.floor(diffMs / 1000);
+                const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
+                const secs = String(totalSec % 60).padStart(2, '0');
+                return `${mins}:${secs}`;
+            }
+
+            async function checkStatus(manual = false) {
+                if (isFinished && !manual) return;
+
+                try {
+                    if (manual && checkBtn && checkBtn.style.display !== 'none') {
+                        checkBtn.disabled = true;
+                        checkBtn.textContent = 'Đang kiểm tra thanh toán...';
+                    }
+
+                    const res = await fetch(statusUrl, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (!res.ok) return;
+
+                    const data = await res.json();
+                    if (!data.found) return;
+
+                    if (data.trangthai_thanhtoan === 'DA_THANH_TOAN') {
+                        isFinished = true;
+                        stopAllTimers();
+
+                        if (countdownEl) {
+                            const currentText = (countdownEl.textContent || '').trim();
+                            const stoppedAt = (currentText && currentText !== '--:--') ? currentText : 'Đã dừng';
+                            countdownEl.textContent = `${stoppedAt} (Đã thanh toán)`;
                         }
 
-                        const res = await fetch(statusUrl, {
-                            headers: { 'Accept': 'application/json' }
+                        if (statusTextEl) {
+                            statusTextEl.innerHTML = `<strong style="color:#059669;">Đã thanh toán thành công!</strong> (Lúc: ${data.paid_at || 'vừa xong'})`;
+                        }
+                        if (checkBtn) checkBtn.style.display = 'none';
+                        if (testCallbackBtn) testCallbackBtn.style.display = 'none';
+                        return;
+                    }
+
+                    if (data.is_expired || data.trangthai_donhang === 'DA_HUY') {
+                        isFinished = true;
+                        stopAllTimers();
+
+                        if (countdownEl) countdownEl.textContent = '00:00 (Hết hạn)';
+                        if (statusTextEl) {
+                            statusTextEl.innerHTML = `<strong style="color:#dc2626;">Mã QR đã quá 15 phút, đơn hàng đã chuyển sang DA_HUY.</strong>`;
+                        }
+                        if (checkBtn) checkBtn.disabled = true;
+                        if (testCallbackBtn) testCallbackBtn.disabled = true;
+                        return;
+                    }
+                } finally {
+                    if (manual && checkBtn && checkBtn.style.display !== 'none' && !isFinished) {
+                        checkBtn.disabled = false;
+                        checkBtn.textContent = 'Tôi đã chuyển khoản — Kiểm tra trạng thái';
+                    }
+                }
+            }
+
+            if (expiresAtRaw && countdownEl) {
+                const targetTime = new Date(expiresAtRaw).getTime();
+                if (!Number.isNaN(targetTime)) {
+                    const updateCountdown = () => {
+                        if (isFinished) {
+                            stopAllTimers();
+                            return;
+                        }
+                        const formatted = formatCountdown(targetTime);
+                        countdownEl.textContent = formatted;
+                        if (formatted === '00:00') {
+                            checkStatus(false);
+                        }
+                    };
+                    updateCountdown();
+                    countdownTimer = setInterval(updateCountdown, 1000);
+                }
+            }
+
+            window.addEventListener('pageshow', function (event) {
+                if (event.persisted) {
+                    if (isFinished) {
+                        stopAllTimers();
+                    } else {
+                        checkStatus(false);
+                    }
+                }
+            });
+
+            if (checkBtn) {
+                checkBtn.addEventListener('click', () => checkStatus(true));
+            }
+
+            if (testCallbackForm && testCallbackBtn) {
+                testCallbackForm.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    if (isFinished) return;
+
+                    testCallbackBtn.disabled = true;
+                    testCallbackBtn.textContent = 'Đang gọi test callback...';
+
+                    try {
+                        const formData = new FormData(testCallbackForm);
+                        const res = await fetch(testCallbackForm.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': formData.get('_token'),
+                                'Accept': 'application/json'
+                            },
+                            body: formData
                         });
-                        if (!res.ok) return;
 
                         const data = await res.json();
-                        if (!data.found) return;
-
-                        if (data.trangthai_thanhtoan === 'DA_THANH_TOAN') {
-                            clearInterval(pollTimer);
-                            clearInterval(countdownTimer);
-                            statusTextEl.innerHTML = `<strong style="color:#059669;">Đã thanh toán thành công!</strong> (Lúc: ${data.paid_at || 'vừa xong'})`;
-                            if (checkBtn) checkBtn.style.display = 'none';
-                            return;
+                        if (res.ok && data.status === 'SUCCESS') {
+                            await checkStatus(true);
+                        } else if (statusTextEl) {
+                            statusTextEl.innerHTML = `<strong style="color:#dc2626;">Test callback thất bại: ${data.message || res.status}</strong>`;
                         }
-
-                        if (data.is_expired || data.trangthai_donhang === 'DA_HUY') {
-                            clearInterval(pollTimer);
-                            clearInterval(countdownTimer);
-                            if (countdownEl) countdownEl.textContent = '00:00 (Hết hạn)';
-                            statusTextEl.innerHTML = `<strong style="color:#dc2626;">Mã QR đã quá 15 phút, đơn hàng đã chuyển sang DA_HUY.</strong>`;
-                            if (checkBtn) checkBtn.disabled = true;
-                            return;
+                    } catch (err) {
+                        if (statusTextEl) {
+                            statusTextEl.innerHTML = `<strong style="color:#dc2626;">Lỗi kết nối khi gọi test callback.</strong>`;
                         }
                     } finally {
-                        if (manual && checkBtn && checkBtn.style.display !== 'none') {
-                            checkBtn.disabled = false;
-                            checkBtn.textContent = 'Tôi đã chuyển khoản — Kiểm tra trạng thái';
+                        if (!isFinished && testCallbackBtn && testCallbackBtn.style.display !== 'none') {
+                            testCallbackBtn.disabled = false;
+                            testCallbackBtn.textContent = 'Test Callback VietQR (SUCCESS)';
                         }
                     }
-                }
+                });
+            }
 
-                if (expiresAtRaw && countdownEl) {
-                    const targetTime = new Date(expiresAtRaw).getTime();
-                    if (!Number.isNaN(targetTime)) {
-                        const updateCountdown = () => {
-                            const diffMs = targetTime - Date.now();
-                            if (diffMs <= 0) {
-                                countdownEl.textContent = '00:00';
-                                checkStatus(false);
-                                return;
-                            }
-                            const totalSec = Math.floor(diffMs / 1000);
-                            const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
-                            const secs = String(totalSec % 60).padStart(2, '0');
-                            countdownEl.textContent = `${mins}:${secs}`;
-                        };
-                        updateCountdown();
-                        countdownTimer = setInterval(updateCountdown, 1000);
-                    }
-                }
-
-                if (checkBtn) {
-                    checkBtn.addEventListener('click', () => checkStatus(true));
-                }
-
-                checkStatus(false);
-                pollTimer = setInterval(() => checkStatus(false), 5000);
-            });
+            checkStatus(false);
+            pollTimer = setInterval(() => checkStatus(false), 5000);
+        });
         </script>
     @endif
 </body>
