@@ -176,7 +176,7 @@
                     </button>
 
                     <form id="formTestVqrCallback"
-                          action="{{ route('vqr.callbacl.test') }}"
+                          action="{{ route('vqr.callback.test') }}"
                           method="POST"
                           style="margin-top: 8px;">
                         @csrf
